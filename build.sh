@@ -8,7 +8,7 @@ MSG="First working release" # COMMIT MSG FOR GIT
 
 function check_test_outcome {
   ret_code=$1
-  if [ $ret_code -ne 0 ] ; then
+  if [ "$ret_code" -ne 0 ] ; then
     echo -e "\e[31mFAIL: $ret_code\e[0m";
     exit 1;
   else
@@ -34,11 +34,19 @@ pandoc ./manpage.md -s -t man -o ./rremind.1
 gzip ./rremind.1
 check_test_outcome
 echo "BUILD: ...compiled"
+echo 
+echo
+echo
+sleep 3
 
 echo "BUILD: Compiling binary for AUR with -m..."
 cargo-aur -m b
 check_test_outcome
 echo "BUILD: ...compiled."
+echo 
+echo
+echo
+sleep 3
 
 PGV="rremind-$PROGRAMMVERSION-x86_64.tar.gz"
 echo "BUILD: Producing binary $PGV with manpage inside..."
@@ -54,6 +62,10 @@ tar -czf $PGV rremind LICENSE.md rremind.1.gz
 cp $PGV "$ORDNER/target/cargo-aur/"
 cp $PGV ~/tools/rremind_upstream/
 echo "BUILD: ...produced."
+echo 
+echo
+echo
+sleep 3
 
 cd "$ORDNER"
 echo "BUILD: Updating GIT..."
@@ -65,6 +77,10 @@ git push origin
 check_test_outcome
 # gh release create v"$PROGRAMMVERSION" --notes "$MSG" "$ORDNER/target/cargo-aur/$PGV"
 echo "BUILD: ...committed"
+echo 
+echo
+echo
+sleep 3
 
 SHASUM=$(sha256sum  "$AUR_ORDNER/$PGV" | awk '{print $1}')
 
@@ -83,6 +99,10 @@ check_test_outcome
 git push
 check_test_outcome
 echo "BUILD: ...pushed"
+echo 
+echo
+echo
+sleep 3
 
 gh release create v"$PROGRAMMVERSION" "$ORDNER/target/cargo-aur/$PGV"
 check_test_outcome

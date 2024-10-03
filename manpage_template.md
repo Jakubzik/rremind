@@ -2,7 +2,7 @@
 title: RREMIND
 section: 1
 header: User Manual
-footer: rremind #RREMINDVERSION#
+footer: rremind #PROGRAMMVERSION#
 date: #DATUM#
 ---
 # NAME
