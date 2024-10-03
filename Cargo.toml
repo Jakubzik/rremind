@@ -1,0 +1,15 @@
+[package]
+name = "rremind"
+version = "0.1.0"
+edition = "2021"
+description = "A simple version of Diane Skoll's remind."
+categories = ["command-line-utilities", "calendar"]
+keywords = ["calendar", "reminder", "cli"]
+license = "GPL-3.0-only"
+repository = "https://github.com/Jakubzik/rremind"
+homepage = "https://github.com/Jakubzik/rremind"
+authors = ["Heiko Jakubzik <heiko.jakubzik@shj-online.de>"]
+readme = "README.md"
+
+[dependencies]
+chrono = "0.4.38"
