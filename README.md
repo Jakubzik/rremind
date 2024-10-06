@@ -42,7 +42,11 @@ Arguments:\
   <args>
     Integer value of day relative to today;
 
-    Or 'when' followed by a search term. 
+    'when' followed by a search term;
+
+    'check' to check if all .rem-filed can be interpreted;
+
+    'help' for a brief help message.
 
     Without any arguments, ``rremind`` will show today's appointments.
 
@@ -51,5 +55,7 @@ Arguments:\
 Next steps:
 
 [ ] Make location of .rem files configurable (after first run)
-[ ] Include diagnosis and help functions
-[ ] Error tolerant parsing of dates
+[ ] Accept date-range input: rremind 0..7 to show appointments of the next 7 days
+[ ] archive dates that are past
+[ ] Make date format more flexible
+[ ] Nicely formatted output

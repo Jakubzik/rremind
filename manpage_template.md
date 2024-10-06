@@ -7,7 +7,7 @@ date: #DATUM#
 ---
 # NAME
 
-rremind -- a reminder service inspired by Diane Skoll's remind
+rremind -- a reminder service inspired by Diane Skoll's `remind`
 
 # SYNOPSIS
 
@@ -28,6 +28,15 @@ With the parameter "when" plus a search string, rremind will list the appointmen
 **i**, 
 : list appointments relative to today (i is an integer, e.g. -2 for the day before yesterday)
 
+**when <searchterm>**
+: list future appointments containing the search-term.
+
+**help**
+: show brief help message
+
+**check**
+: read through the *.rem files in the configuration folder and report lines that cannot be properly interpreted by `rremind`.
+
 # EXAMPLES
 
 **rremind**
@@ -39,8 +48,11 @@ With the parameter "when" plus a search string, rremind will list the appointmen
 **rremind -1**
 : list all of yesterday's appointments
 
-**rremind when dendist**
+**rremind when dentist**
 : list appointments that contain the word "dentist"
+
+**rremind check**
+: syntax-check the files in the rremind folder
 
 # AUTHORS
 

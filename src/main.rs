@@ -1,4 +1,11 @@
-use chrono::{Datelike, Days, NaiveDate, NaiveTime, TimeDelta};
+mod parser;
+
+use crate::parser::extract_datum_text;
+use crate::parser::{
+    extract_description, extract_start_time, extract_stop_time, get_full_month, get_short_month,
+};
+pub(crate) use chrono::{Datelike, Days, NaiveDate};
+use parser::get_termin_from_line;
 use std::{
     env::{self},
     fs::{self, File},
@@ -6,21 +13,30 @@ use std::{
     path::Path,
 };
 
+// @todo:
+// - make source code English throughout
+
 const EXIT_CODE_NO_HOME_DIR: i32 = 1;
 
+#[derive(Debug, PartialEq)]
 struct Termin {
     appointment_date: Option<chrono::NaiveDate>,
+    appointment_is_yearly: bool,
     appointment_start: Option<chrono::NaiveTime>,
     appointment_stop: Option<chrono::NaiveTime>,
     appointment_description: String,
-    appointment_date_alt_text: Option<String>,
+    appointment_date_alt_text: String,
 }
 
-// @todo
-// Ausgabe als Tabelle, siehe:
-// <https://stackoverflow.com/questions/30379341/how-to-print-well-formatted-tables-to-the-console>
-// Man-page
-// Code aufhübschen
+#[derive(PartialEq, Eq)]
+enum Command {
+    Help,
+    ListAppointments,
+    SearchAppointments,
+    Check,
+    Unknown,
+}
+
 fn main() {
     let s_rremind_folder = get_rremind_folder(); // from config or from user.
     let mut search_term = "".to_string(); // in case this is a 'when?' request.
@@ -38,27 +54,54 @@ fn main() {
     // rremind 1 is tomorrow, rremind -1 is yesterday, etc.
     let mut requested_date: NaiveDate = chrono::offset::Local::now().date_naive();
 
-    read_user_input(args, &mut requested_date, &mut search_term);
+    let cmd = read_user_input(args, &mut requested_date, &mut search_term);
+
+    if cmd == Command::Unknown {
+        println!("Sorry, I do not understand this command. Try 'rremind help' or 'man rremind'.");
+    }
+    if cmd == Command::Help {
+        return;
+    }
 
     let mut accumulated_termine: Vec<Termin> = vec![];
+    let mut acc_errors: Vec<String> = vec![];
 
     for path in directory_with_remind_files {
         if let Ok(datei) = path {
             if datei.path().to_str().unwrap().ends_with(&".rem") {
                 let termine_aus_datei = std::fs::read_to_string(datei.path()).unwrap();
-                if search_term != "" {
-                    accumulate_termine_by_search(
-                        &search_term,
-                        termine_aus_datei,
+                match cmd {
+                    Command::ListAppointments => accumulate_termine(
+                        requested_date,
+                        &termine_aus_datei,
                         &mut accumulated_termine,
-                    );
-                } else {
-                    accumulate_termine(requested_date, termine_aus_datei, &mut accumulated_termine);
+                    ),
+                    Command::SearchAppointments => accumulate_termine_by_search(
+                        &search_term,
+                        &termine_aus_datei,
+                        &mut accumulated_termine,
+                    ),
+                    Command::Check => accumulate_syntax_errors(
+                        datei.path().to_str().unwrap(),
+                        &termine_aus_datei,
+                        &mut acc_errors,
+                    ),
+                    _ => panic! {"Command misunderstood, sorry."},
                 }
             }
         }
     }
 
+    if cmd == Command::Check {
+        if acc_errors.len() == 0 {
+            println!("Check complete: all ok!");
+        } else {
+            for problem in acc_errors {
+                println!("Problem: \n{}\n", problem);
+            }
+        }
+        return;
+    }
     sortiere(&mut accumulated_termine);
 
     for t in accumulated_termine {
@@ -66,10 +109,7 @@ fn main() {
             "{} -- {}{}",
             match t.appointment_date {
                 Some(dat) => dat.to_string(),
-                _ => match t.appointment_date_alt_text {
-                    Some(ref info) => info.clone(),
-                    _ => "".to_string(),
-                },
+                _ => t.appointment_date_alt_text.to_string(),
             },
             t.appointment_description,
             get_zeitangabe(&t),
@@ -77,9 +117,17 @@ fn main() {
     }
 }
 
+fn accumulate_syntax_errors(pfad: &str, termine_aus_datei: &str, acc_errors: &mut Vec<String>) {
+    for line in termine_aus_datei.lines() {
+        if get_termin_from_line(&line).is_none() {
+            acc_errors.push(format!("File: '{}':\nLine: {}\n", pfad, line));
+        }
+    }
+}
+
 fn accumulate_termine(
     datum: chrono::NaiveDate,
-    termine_aus_datei: String,
+    termine_aus_datei: &str,
     termine: &mut Vec<Termin>,
 ) {
     // Suche nach Notation yyyy jmonth day AT time [DURATION] ... MSG
@@ -113,7 +161,8 @@ fn accumulate_termine(
                 appointment_start: extract_start_time(&line), // <- @todo
                 appointment_stop: extract_stop_time(&line),   // <- @todo
                 appointment_description: extract_description(&line),
-                appointment_date_alt_text: None,
+                appointment_date_alt_text: "".to_string(),
+                appointment_is_yearly: false, // <- @todo
             })
         }
     }
@@ -121,37 +170,24 @@ fn accumulate_termine(
 
 fn accumulate_termine_by_search(
     search: &String,
-    termine_aus_datei: String,
+    termine_aus_datei: &str,
     termine: &mut Vec<Termin>,
 ) {
     for line in termine_aus_datei.lines() {
         if line.contains(search) {
             termine.push(Termin {
                 appointment_date: None,
-                appointment_date_alt_text: Some(extract_datum_text(&line)),
+                appointment_date_alt_text: extract_datum_text(&line),
                 appointment_start: extract_start_time(&line), // <- @todo
                 appointment_stop: extract_stop_time(&line),   // <- @todo
                 appointment_description: extract_description(&line),
+                appointment_is_yearly: false, // <- @todo
             })
         }
     }
 }
 
-// textual representation of the date, i.e.
-// Wed, or Jan 10, or 2024 Jan 10
-// This is for display of an appointment
-// found through the search functionality
-fn extract_datum_text(line: &str) -> String {
-    // Mon AT
-    // mar 1 AT
-    // 2024 sep 1 AT
-    match line.split_once(" AT ") {
-        Some(text) => text.0.trim().to_string(),
-        _ => String::new(),
-    }
-}
-
-fn read_user_input(args: Vec<String>, datum: &mut NaiveDate, search: &mut String) {
+fn read_user_input(args: Vec<String>, datum: &mut NaiveDate, search: &mut String) -> Command {
     if args.len() > 1 {
         if let Ok(days) = args.get(1).unwrap().parse::<i64>() {
             if days > 0 {
@@ -161,14 +197,29 @@ fn read_user_input(args: Vec<String>, datum: &mut NaiveDate, search: &mut String
                     .checked_sub_days(Days::new(days.abs() as u64))
                     .unwrap();
             }
+            return Command::ListAppointments;
         } else {
             if args.get(1).unwrap() == "when" {
                 *search = args.get(2).expect(
                     "If you're calling 'when', you need a second parameter. `rremind when dentist`",
                 ).to_string();
+                return Command::SearchAppointments;
             }
         }
+        if args.get(1).unwrap() == "check" {
+            return Command::Check;
+        }
+        if args.get(1).unwrap() == "help" {
+            println!("Help for rremind:");
+            println!("- rremind check: looks for syntax errors in your rremind files.");
+            println!("- rremind <n>: lists appointments n days from (or to) today.");
+            println!("- rremind when <term>: lists future appointments containing 'term'");
+            return Command::Help;
+        }
+
+        return Command::Unknown;
     }
+    return Command::ListAppointments;
 }
 
 /// Get path to folder containing the .rem-files.
@@ -255,87 +306,3 @@ fn sortiere(accumulated_termine: &mut [Termin]) {
 //         Weekday::Sun => todo!(),
 //     }
 // }
-
-// Wird in der Zeile entweder durch "MSG" oder durch "REM"
-// eingeleitet
-fn extract_description(line: &str) -> String {
-    let tmp = line.split_once(" MSG ");
-    if let Some(msg) = tmp {
-        return msg.1.to_string();
-    } else {
-        let tmp = line.split_once(" REM ");
-        if let Some(msg) = tmp {
-            return msg.1.to_string();
-        } else {
-            return "Keine Info zum Termin".to_string();
-        }
-    }
-}
-
-// AT XYZ DURATION dd
-fn extract_stop_time(line: &str) -> Option<chrono::NaiveTime> {
-    if let Some(start) = extract_start_time(line) {
-        let duration = between(line, " DURATION ", " ");
-        if let Ok(f_duration) = duration.parse::<i64>() {
-            if f_duration > 8 {
-                // werten wir als Minuten
-                let (r, _) =
-                    start.overflowing_add_signed(TimeDelta::try_minutes(f_duration).unwrap());
-                return Some(r);
-            } else {
-                // werten wir als Stunden
-                let (r, _) =
-                    start.overflowing_add_signed(TimeDelta::try_hours(f_duration).unwrap());
-
-                return Some(r);
-            }
-        }
-    }
-    None
-    // todo!()
-}
-
-// AT 11:00
-fn extract_start_time(line: &str) -> Option<chrono::NaiveTime> {
-    let s = between(line, " AT ", " ");
-    match NaiveTime::parse_from_str(s, "%H:%M") {
-        Ok(r) => Some(r),
-        _ => None,
-    }
-    // None
-    // todo!()
-}
-
-fn get_full_month(monat: u32) -> String {
-    match monat {
-        1 => "January".to_string(),
-        2 => "February".to_string(),
-        3 => "March".to_string(),
-        4 => "April".to_string(),
-        5 => "May".to_string(),
-        6 => "June".to_string(),
-        7 => "July".to_string(),
-        8 => "August".to_string(),
-        9 => "September".to_string(),
-        10 => "October".to_string(),
-        11 => "November".to_string(),
-        12 => "December".to_string(),
-        _ => "Unbekannt".to_string(),
-    }
-}
-
-fn get_short_month(monat: u32) -> String {
-    get_full_month(monat)[..3].to_lowercase()
-}
-
-fn between<'a>(source: &'a str, start: &'a str, end: &'a str) -> &'a str {
-    let start_position = source.find(start);
-
-    if start_position.is_some() {
-        let start_position = start_position.unwrap() + start.len();
-        let source = &source[start_position..];
-        let end_position = source.find(end).unwrap_or_default();
-        return &source[..end_position];
-    }
-    return "";
-}

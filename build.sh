@@ -2,8 +2,8 @@
 #
 # ======================================
 # EDIT
-PROGRAMMVERSION="0.0.1" 
-MSG="First working release" # COMMIT MSG FOR GIT
+PROGRAMMVERSION="0.0.2" 
+MSG="Add 'rremind check' and 'rremind help'" # COMMIT MSG FOR GIT
 # ======================================
 
 function check_test_outcome {
@@ -16,6 +16,9 @@ function check_test_outcome {
   fi;
 }
 
+# Installiert als crate für cargo install;
+# Lädt einen Release by Github hoch
+# Lädt PKGBUILD und .SRCINFO (via tools/rremind_upstream/remind) auf AUR
 ORDNER="/home/heiko/development/rust/rremind"
 AUR_ORDNER="/home/heiko/tools/rremind_upstream"
 DATUM=$(date '+%B %d, %Y')
@@ -67,6 +70,7 @@ echo
 echo
 sleep 3
 
+# Entwicklungsordner-Update (Github)
 cd "$ORDNER"
 echo "BUILD: Updating GIT..."
 git add .
@@ -82,6 +86,7 @@ echo
 echo
 sleep 3
 
+echo "Lade Version für AUR hoch"
 SHASUM=$(sha256sum  "$AUR_ORDNER/$PGV" | awk '{print $1}')
 
 sed -e "s/#SHASUM#/$SHASUM/g" "$AUR_ORDNER/SRCINFO_template.md" > "$AUR_ORDNER/rremind/.SRCINFO"
@@ -98,12 +103,13 @@ git commit -m "$MSG"
 check_test_outcome
 git push
 check_test_outcome
-echo "BUILD: ...pushed"
+echo "BUILD: ...pushed to AUR"
 echo 
 echo
 echo
 sleep 3
 
+echo "Lade Release auf GitHub hoch"
 gh release create v"$PROGRAMMVERSION" "$ORDNER/target/cargo-aur/$PGV"
 check_test_outcome
 #
