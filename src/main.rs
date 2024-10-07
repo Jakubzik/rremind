@@ -1,10 +1,6 @@
 mod parser;
 
-use crate::parser::extract_datum_text;
-use crate::parser::{
-    extract_description, extract_start_time, extract_stop_time, get_full_month, get_short_month,
-};
-pub(crate) use chrono::{Datelike, Days, NaiveDate};
+pub(crate) use chrono::{Days, NaiveDate};
 use parser::get_termin_from_line;
 use std::{
     env::{self},
@@ -130,40 +126,11 @@ fn accumulate_termine(
     termine_aus_datei: &str,
     termine: &mut Vec<Termin>,
 ) {
-    // Suche nach Notation yyyy jmonth day AT time [DURATION] ... MSG
-    let year_full_month = format!(
-        "{} {} {} ", // Leerzeiten damit 2024 oct 2 != 2024 oct 21
-        datum.year(),
-        get_full_month(datum.month()),
-        datum.day()
-    );
-
-    // Suche nach Notation yyyy oct 3 AT ...
-    let year_short_month = format!(
-        "{} {} {} ",
-        datum.year(),
-        get_short_month(datum.month()),
-        datum.day()
-    );
-
-    let weekly = format!("{:?} ", datum.weekday());
-
-    let yearly = format!("{} {} ", get_short_month(datum.month()), datum.day());
-
     for line in termine_aus_datei.lines() {
-        if line.starts_with(&year_full_month)
-            || line.starts_with(&year_short_month)
-            || line.starts_with(&weekly)
-            || line.starts_with(&yearly)
-        {
-            termine.push(Termin {
-                appointment_date: Some(datum),
-                appointment_start: extract_start_time(&line), // <- @todo
-                appointment_stop: extract_stop_time(&line),   // <- @todo
-                appointment_description: extract_description(&line),
-                appointment_date_alt_text: "".to_string(),
-                appointment_is_yearly: false, // <- @todo
-            })
+        if let Some(termin_match) = get_termin_from_line(&line) {
+            if termin_match.appointment_date == Some(datum) {
+                termine.push(termin_match);
+            }
         }
     }
 }
@@ -175,14 +142,9 @@ fn accumulate_termine_by_search(
 ) {
     for line in termine_aus_datei.lines() {
         if line.contains(search) {
-            termine.push(Termin {
-                appointment_date: None,
-                appointment_date_alt_text: extract_datum_text(&line),
-                appointment_start: extract_start_time(&line), // <- @todo
-                appointment_stop: extract_stop_time(&line),   // <- @todo
-                appointment_description: extract_description(&line),
-                appointment_is_yearly: false, // <- @todo
-            })
+            if let Some(found) = get_termin_from_line(&line) {
+                termine.push(found);
+            }
         }
     }
 }
@@ -211,7 +173,7 @@ fn read_user_input(args: Vec<String>, datum: &mut NaiveDate, search: &mut String
         }
         if args.get(1).unwrap() == "help" {
             println!("Help for rremind:");
-            println!("- rremind check: looks for syntax errors in your rremind files.");
+            println!("- rremind check: looks for lines in your rremind files that cannot be interpreted.");
             println!("- rremind <n>: lists appointments n days from (or to) today.");
             println!("- rremind when <term>: lists future appointments containing 'term'");
             return Command::Help;

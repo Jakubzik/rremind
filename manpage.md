@@ -2,8 +2,8 @@
 title: RREMIND
 section: 1
 header: User Manual
-footer: rremind 0.0.2
-date: Oktober 06, 2024
+footer: rremind 0.0.3
+date: Oktober 07, 2024
 ---
 # NAME
 
@@ -28,13 +28,13 @@ With the parameter "when" plus a search string, rremind will list the appointmen
 **i**, 
 : list appointments relative to today (i is an integer, e.g. -2 for the day before yesterday)
 
-**when <searchterm>**
+**when <searchterm>**,
 : list future appointments containing the search-term.
 
-**help**
+**help**,
 : show brief help message
 
-**check**
+**check**,
 : read through the *.rem files in the configuration folder and report lines that cannot be properly interpreted by `rremind`.
 
 # EXAMPLES

@@ -37,8 +37,7 @@ pub fn get_termin_from_line(s_text: &str) -> Option<Termin> {
 }
 // 2024 sep 9 AT 10:00 DURATION 1 MSG Velmeke mal wegen des Fortschritts an seiner Hausarbeit fragen
 pub(crate) fn get_termin_from_full_date(s_in: &str) -> Option<Termin> {
-    let small = s_in.to_lowercase();
-    let words: Vec<&str> = small.split_whitespace().collect();
+    let words: Vec<&str> = s_in.split_whitespace().collect();
     if let Ok(year) = words.get(0)?.parse::<i32>() {
         let month = get_month_as_no(words.get(1)?)?;
         if let Ok(day) = words.get(2)?.parse::<usize>() {
@@ -47,10 +46,10 @@ pub(crate) fn get_termin_from_full_date(s_in: &str) -> Option<Termin> {
             return Some(Termin {
                 appointment_date: da,
                 appointment_is_yearly: true,
-                appointment_start: extract_start_time(&small),
-                appointment_stop: extract_stop_time(&small),
-                appointment_description: extract_description(&small),
-                appointment_date_alt_text: extract_datum_text(&small),
+                appointment_start: extract_start_time(s_in),
+                appointment_stop: extract_stop_time(s_in),
+                appointment_description: extract_description(s_in),
+                appointment_date_alt_text: extract_datum_text(s_in),
             });
         }
     }
@@ -62,21 +61,20 @@ pub(crate) fn get_termin_from_full_date(s_in: &str) -> Option<Termin> {
 //// Returns a "Termin" adding the current year -- or None,
 //// it his is not notation without year.
 pub(crate) fn get_termin_without_year(s_in: &str) -> Option<Termin> {
-    let small = s_in.to_lowercase();
-    let words: Vec<&str> = small.split_whitespace().collect();
+    let words: Vec<&str> = s_in.split_whitespace().collect();
     if is_month(words.get(0)?) {
         let year = chrono::offset::Local::now().date_naive().year();
-        let month = get_month_as_no(&small)?;
+        let month = get_month_as_no(s_in)?;
         if let Ok(day) = words.get(1)?.parse::<usize>() {
             let da = NaiveDate::from_ymd_opt(year, month as u32, day as u32);
 
             return Some(Termin {
                 appointment_date: da,
                 appointment_is_yearly: true,
-                appointment_start: extract_start_time(&small),
-                appointment_stop: extract_stop_time(&small),
-                appointment_description: extract_description(&small),
-                appointment_date_alt_text: extract_datum_text(&small),
+                appointment_start: extract_start_time(s_in),
+                appointment_stop: extract_stop_time(s_in),
+                appointment_description: extract_description(s_in),
+                appointment_date_alt_text: extract_datum_text(s_in),
             });
         }
     }
@@ -89,17 +87,17 @@ pub(crate) fn get_termin_without_year(s_in: &str) -> Option<Termin> {
 //// Returns a "Termin" adding the current year and month -- or None,
 //// if s_in does not start with a weekday
 pub(crate) fn get_termin_without_month(s_in: &str) -> Option<Termin> {
-    let small = s_in.to_lowercase();
-    let words: Vec<&str> = small.split_whitespace().collect();
+    // let small = s_in.to_lowercase();
+    let words: Vec<&str> = s_in.split_whitespace().collect();
     if is_day(words.get(0)?) {
         if let Some(da) = find_next_date(words.get(0)?) {
             return Some(Termin {
                 appointment_date: Some(da),
                 appointment_is_yearly: false,
-                appointment_start: extract_start_time(&small),
-                appointment_stop: extract_stop_time(&small),
-                appointment_description: extract_description(&small),
-                appointment_date_alt_text: extract_datum_text(&small),
+                appointment_start: extract_start_time(s_in),
+                appointment_stop: extract_stop_time(s_in),
+                appointment_description: extract_description(s_in),
+                appointment_date_alt_text: extract_datum_text(s_in),
             });
         }
     }
@@ -112,9 +110,9 @@ pub(crate) fn get_termin_without_month(s_in: &str) -> Option<Termin> {
 /// Oct 7, 2024
 fn find_next_date(weekday: &str) -> Option<NaiveDate> {
     let mut target_date = chrono::offset::Local::now().date_naive();
-    let wd = &weekday[0..3]; // Wednesday and Wed are both ok as input
+    let wd = &weekday[0..3].to_lowercase(); // Wednesday and Wed are both ok as input
     for _ii in 0..6 {
-        if target_date.weekday().to_string().to_lowercase() == wd {
+        if target_date.weekday().to_string().to_lowercase() == *wd {
             return Some(target_date);
         }
         target_date = target_date.checked_add_days(Days::new(1)).unwrap();
@@ -123,11 +121,14 @@ fn find_next_date(weekday: &str) -> Option<NaiveDate> {
 }
 
 fn is_month(month: &str) -> bool {
-    MONTHS.iter().any(|s| month.starts_with(*s))
+    MONTHS.iter().any(|s| month.to_lowercase().starts_with(*s))
 }
 
 fn get_month_as_no(month: &str) -> Option<usize> {
-    match MONTHS.iter().position(|mmonth| month.starts_with(mmonth)) {
+    match MONTHS
+        .iter()
+        .position(|mmonth| month.to_lowercase().starts_with(mmonth))
+    {
         Some(i) => Some(i + 1),
         _ => None,
     }
@@ -135,25 +136,29 @@ fn get_month_as_no(month: &str) -> Option<usize> {
 
 fn is_day(weekday_name: &str) -> bool {
     // let wdn = &weekday_name[0..2];
-    DAYS.iter().any(|s| weekday_name.starts_with(*s))
+    DAYS.iter()
+        .any(|s| weekday_name.to_lowercase().starts_with(*s))
 }
 
-fn get_day_as_no(weekday_name: &str) -> Option<usize> {
-    match DAYS.iter().position(|day| weekday_name.starts_with(day)) {
-        Some(i) => Some(i + 1),
-        _ => None,
-    }
-}
+// fn get_day_as_no(weekday_name: &str) -> Option<usize> {
+//     match DAYS.iter().position(|day| weekday_name.starts_with(day)) {
+//         Some(i) => Some(i + 1),
+//         _ => None,
+//     }
+// }
 // Wird in der Zeile entweder durch "MSG" oder durch "REM"
 // eingeleitet
 pub(crate) fn extract_description(line: &str) -> String {
-    let tmp = line.split_once(" MSG ");
+    let small = line.to_lowercase();
+    let tmp = small.split_once(" msg ");
     if let Some(msg) = tmp {
-        return msg.1.to_string();
+        // return msg.1.to_string();
+        return line[msg.0.len() + 5..].to_string();
     } else {
-        let tmp = line.split_once(" REM ");
+        let tmp = small.split_once(" rem ");
         if let Some(msg) = tmp {
-            return msg.1.to_string();
+            // return msg.1.to_string();
+            return line[msg.0.len() + 5..].to_string();
         } else {
             return NO_INFO.to_string();
         }
@@ -176,8 +181,10 @@ pub(crate) fn extract_datum_text(line: &str) -> String {
 
 // AT XYZ DURATION dd
 pub(crate) fn extract_stop_time(line: &str) -> Option<NaiveTime> {
-    if let Some(start) = extract_start_time(line) {
-        let duration = between(line, " DURATION ", " ");
+    let small = line.to_lowercase();
+    if let Some(start) = extract_start_time(&small) {
+        let duration = between(&small, " duration ", " ");
+        // dbg!("Duration: {}", duration);
         if let Ok(f_duration) = duration.parse::<i64>() {
             if f_duration > 8 {
                 // werten wir als Minuten
@@ -199,7 +206,9 @@ pub(crate) fn extract_stop_time(line: &str) -> Option<NaiveTime> {
 
 // AT 11:00
 pub(crate) fn extract_start_time(line: &str) -> Option<NaiveTime> {
-    let s = between(line, " at ", " ");
+    let small = line.to_lowercase();
+    // @todo: change syntax: " at " is too common to use as identifyer
+    let s = between(&small, " at ", " ");
     match NaiveTime::parse_from_str(s, "%H:%M") {
         Ok(r) => Some(r),
         _ => None,
@@ -208,27 +217,27 @@ pub(crate) fn extract_start_time(line: &str) -> Option<NaiveTime> {
     // todo!()
 }
 
-pub(crate) fn get_full_month(monat: u32) -> String {
-    match monat {
-        1 => "January".to_string(),
-        2 => "February".to_string(),
-        3 => "March".to_string(),
-        4 => "April".to_string(),
-        5 => "May".to_string(),
-        6 => "June".to_string(),
-        7 => "July".to_string(),
-        8 => "August".to_string(),
-        9 => "September".to_string(),
-        10 => "October".to_string(),
-        11 => "November".to_string(),
-        12 => "December".to_string(),
-        _ => "UnknownMonth".to_string(),
-    }
-}
+// pub(crate) fn get_full_month(monat: u32) -> String {
+//     match monat {
+//         1 => "January".to_string(),
+//         2 => "February".to_string(),
+//         3 => "March".to_string(),
+//         4 => "April".to_string(),
+//         5 => "May".to_string(),
+//         6 => "June".to_string(),
+//         7 => "July".to_string(),
+//         8 => "August".to_string(),
+//         9 => "September".to_string(),
+//         10 => "October".to_string(),
+//         11 => "November".to_string(),
+//         12 => "December".to_string(),
+//         _ => "UnknownMonth".to_string(),
+//     }
+// }
 
-pub(crate) fn get_short_month(monat: u32) -> String {
-    get_full_month(monat)[..3].to_lowercase()
-}
+// pub(crate) fn get_short_month(monat: u32) -> String {
+//     get_full_month(monat)[..3].to_lowercase()
+// }
 
 pub fn between<'a>(source: &'a str, start: &'a str, end: &'a str) -> &'a str {
     let start_position = source.find(start);
@@ -258,7 +267,7 @@ mod test_parsing {
         Termin,
     };
 
-    use super::NO_INFO;
+    // use super::NO_INFO;
 
     fn get_testtermin_thisyear() -> Termin {
         let year = offset::Local::now().date_naive().year();
@@ -267,7 +276,7 @@ mod test_parsing {
             appointment_is_yearly: true,
             appointment_start: None,
             appointment_stop: None,
-            appointment_description: NO_INFO.to_string(),
+            appointment_description: "birthday".to_string(), //NO_INFO.to_string(),
             appointment_date_alt_text: "".to_string(),
         }
     }
@@ -418,7 +427,6 @@ mod test_parsing {
     #[test]
     fn parsing_comprehensive3() {
         let s_test = "Mon aT 10:00 DURATION 1 msg my birthday";
-        // assert!(get_termin_without_year(&s_test).is_none());
         assert!(get_termin_from_line(&s_test).is_some());
         assert_eq!(
             get_termin_from_line(&s_test)
@@ -436,5 +444,17 @@ mod test_parsing {
         let s_test = "Mun aT 10:00 DURATION 1 msg my birthday";
         // assert!(get_termin_without_year(&s_test).is_none());
         assert!(get_termin_from_line(&s_test).is_none());
+    }
+
+    #[test]
+    fn parsing_comprehensive5() {
+        let s_test = "Mon aT 10:00 DURATION 1 msg my birthday";
+        // assert!(get_termin_without_year(&s_test).is_none());
+        assert_eq!(
+            get_termin_from_line(&s_test)
+                .unwrap()
+                .appointment_description,
+            "my birthday"
+        );
     }
 }
