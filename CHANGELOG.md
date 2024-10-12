@@ -1,3 +1,9 @@
+# version 0.0.4
+
+- implemented rudimental editing of config file
+
+- implemented archiving
+
 # version 0.0.3
 
 - corrected issues with upper and lower case token words
@@ -20,12 +26,18 @@
 
 # Unreleased
 
-[ ] Make path to .rem-folder mutable
-[ ] Bug: "When" fails to give the time of the appointment
-[ ] Implement "version" command
-[ ] Accept date-range input: rremind 0..7 to show appointments of the next 7 days
-[ ] archive dates that are past
-[ ] Make date format more flexible
-[ ] Add nicely formatted output (for terminal)
-[ ] Add .deb package
+[ ] Implement "version" command.
+[ ] Make "archive" accept a parameter specifying how old the appointments need to be for archiving.
+[ ] Make archive configurable so that it collects all archives in *one* file.
+[ ] "sort" command to sort the rem files chronologically.
+[ ] "put" command to add appointments.
+[ ] Accept date-range input: rremind 0..7 to show appointments of the next 7 days.
+[ ] Make date format more flexible.
+[ ] Add nicely formatted output (for terminal).
+[ ] Add .deb package.
 
+# History
+
+[x] Make path to .rem-folder mutable [v 0.0.4]
+[x] Bug: "When" fails to give the time of the appointment [v 0.0.4]
+[x] archive dates that are past [v 0.0.4]

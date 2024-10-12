@@ -45,7 +45,7 @@ pub(crate) fn get_termin_from_full_date(s_in: &str) -> Option<Termin> {
 
             return Some(Termin {
                 appointment_date: da,
-                appointment_is_yearly: true,
+                appointment_is_full_date: true,
                 appointment_start: extract_start_time(s_in),
                 appointment_stop: extract_stop_time(s_in),
                 appointment_description: extract_description(s_in),
@@ -70,7 +70,7 @@ pub(crate) fn get_termin_without_year(s_in: &str) -> Option<Termin> {
 
             return Some(Termin {
                 appointment_date: da,
-                appointment_is_yearly: true,
+                appointment_is_full_date: false,
                 appointment_start: extract_start_time(s_in),
                 appointment_stop: extract_stop_time(s_in),
                 appointment_description: extract_description(s_in),
@@ -93,7 +93,7 @@ pub(crate) fn get_termin_without_month(s_in: &str) -> Option<Termin> {
         if let Some(da) = find_next_date(words.get(0)?) {
             return Some(Termin {
                 appointment_date: Some(da),
-                appointment_is_yearly: false,
+                appointment_is_full_date: false,
                 appointment_start: extract_start_time(s_in),
                 appointment_stop: extract_stop_time(s_in),
                 appointment_description: extract_description(s_in),
@@ -273,7 +273,7 @@ mod test_parsing {
         let year = offset::Local::now().date_naive().year();
         Termin {
             appointment_date: NaiveDate::from_ymd_opt(year, 11, 1),
-            appointment_is_yearly: true,
+            appointment_is_full_date: true,
             appointment_start: None,
             appointment_stop: None,
             appointment_description: "birthday".to_string(), //NO_INFO.to_string(),

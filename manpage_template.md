@@ -37,6 +37,12 @@ With the parameter "when" plus a search string, rremind will list the appointmen
 **check**,
 : read through the *.rem files in the configuration folder and report lines that cannot be properly interpreted by `rremind`.
 
+**config**,
+: enter or alter the directories where the remind-files are located, and where they are archived. The configuration file can equally well be edited manually (look under $HOME/rremind/rr.rc)
+
+**archive**,
+: archive all appointments that are in the past. This concerns only appointments that are specified with a full date -- periodical entries are not archived. Lines in .rem-files containing past appointments are erased from these files, and appended to files in the archive directory (see 'config' above). Files in the archive directory have the same name as the original .rem-file, but their suffix is .done (rather than .rem).
+
 # EXAMPLES
 
 **rremind**
@@ -53,6 +59,12 @@ With the parameter "when" plus a search string, rremind will list the appointmen
 
 **rremind check**
 : syntax-check the files in the rremind folder
+
+**rremind config**
+: start a rudimentary dialog to set the .rem-file directory and an archive directory
+
+**rremind archive**
+: move all appointments that are past to the archive.
 
 # AUTHORS
 
