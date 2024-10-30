@@ -22,9 +22,9 @@ These files can contain **weekly dates**...
 
 (Duration can be hours or minutes; values > 8 are interpreted as minutes; time is optional)
 
-``rremind`` will ask for the location of your .rem-files on the first run.
+``rremind`` will ask for the location of your .rem-files on the first run -- or the location can be altered later using ``rremind config``.
 
-You can then retrieve dates of specific days, or find appointments by name (e.g. 'dentist').
+You can then retrieve dates of specific days or periods, or find appointments by name (e.g. 'dentist').
 
 ## Installation
 
@@ -42,9 +42,17 @@ Arguments:\
   <args>
     Integer value of day relative to today;
 
+    A range of two integers (e.g. -1..2) to list all appointments between yesterday and the day of tomorrow (inclusive)
+
     'when' followed by a search term;
 
-    'check' to check if all .rem-filed can be interpreted;
+    'check' to check if all .rem-filed can be interpreted
+
+    'config' to change the settings
+
+    'archive' to archive all appointments that are in the past
+
+    'version' to get the version number of your installation
 
     'help' for a brief help message.
 
@@ -54,8 +62,12 @@ Arguments:\
 
 Next steps:
 
-[ ] Make location of .rem files configurable (after first run)
-[ ] Accept date-range input: rremind 0..7 to show appointments of the next 7 days
-[ ] archive dates that are past
-[ ] Make date format more flexible
-[ ] Nicely formatted output
+[ ] Make "archive" accept a parameter specifying how old the appointments need to be for archiving.
+[ ] Make archive configurable so that it collects all archives in *one* file.
+[ ] Make archive *report* what it's doing
+[ ] "sort" command to sort the rem files chronologically.
+[ ] "put" command to add appointments.
+[ ] Accept date-range input: rremind 0..7 to show appointments of the next 7 days.
+[ ] Make date format more flexible.
+[ ] Add nicely formatted output (for terminal).
+[ ] Add .deb package.

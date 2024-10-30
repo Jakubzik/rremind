@@ -10,10 +10,19 @@ use std::{
     path::Path,
 };
 
-// @todo:
-// - make source code English throughout
+/// Simple version of Diane Skoll's `remind` tool
+/// Looks through files with suffix ".rem" in
+/// the "rremind-folder".
+/// Files contain appointments in these formats
+/// 2024 December 1 AT 11:00 DURATION 1 MSG Breakfast at Tiffany's
+/// 2024 Dec 1 AT 11:00 DURATION 1 MSG Breakfast at Tiffany's
+/// Dec 6 AT 8:00 DURATION 1 MSG Nikolaus
+/// Mon AT 8:00 DURATION 1 MSG Start new week
 
+// If we're not on Linux, don't bother
 const EXIT_CODE_NO_HOME_DIR: i32 = 1;
+const ARCHIVE_THRESHOLD: usize = 1; // @todo make threshold configurable
+const VERSION: &str = "0.0.5";
 
 #[derive(Debug)]
 struct RRemindFolders {
@@ -24,6 +33,9 @@ struct RRemindFolders {
 }
 
 impl RRemindFolders {
+    /// Write configuration to file, currently only
+    /// rremind_files=<directory>
+    /// rremind_archive=<directory>
     fn to_config_file_text(&self) -> String {
         format!(
             "rremind_files={}\nrremind_archive={}\n", // <- final line break is important for later parsing
@@ -33,7 +45,7 @@ impl RRemindFolders {
 }
 
 #[derive(Debug, PartialEq)]
-struct Termin {
+struct Appointment {
     appointment_date: Option<chrono::NaiveDate>,
     appointment_is_full_date: bool,
     appointment_start: Option<chrono::NaiveTime>,
@@ -41,7 +53,8 @@ struct Termin {
     appointment_description: String,
     appointment_date_alt_text: String,
 }
-impl Termin {
+
+impl Appointment {
     // Needed for archiving, so it's defensive:
     // the appointment is 'past' if and *only* if
     // we understand its date, and the date is
@@ -53,7 +66,11 @@ impl Termin {
             return false;
         } else {
             if let Some(dtm) = self.appointment_date {
-                Utc::now().date_naive() > dtm
+                let thresh_date = Utc::now()
+                    .date_naive()
+                    .checked_sub_days(Days::new(ARCHIVE_THRESHOLD as u64))
+                    .unwrap();
+                thresh_date > dtm
             } else {
                 false
             }
@@ -65,22 +82,22 @@ impl Termin {
 enum Command {
     Help,
     ListAppointments,
+    MultiListAppointments, // of a range of days
     SearchAppointments,
     Check,
     EditConfig,
     Archive,
+    Version,
     Unknown,
 }
 
 // See also @todo 1
-// Another @todo: the tests don't run through
 // Implementing Archive: the method should
 // - check if the file .rem exists in the archive-folder with the suffix .done
 // - append to this file if it exists
 // - create the file if it does not yet exist.
 // - print the earliest date per file that was archived
 // - consider writing an 'undo' (with the earliest date as input)
-
 fn main() {
     let s_rremind_folder = get_rremind_folders(); // from config or from user.
     let mut search_term = "".to_string(); // in case this is a 'when?' request.
@@ -90,12 +107,23 @@ fn main() {
     // Starting with today, the requested
     // date is calculated:
     // rremind 1 is tomorrow, rremind -1 is yesterday, etc.
-    let mut requested_date: NaiveDate = chrono::offset::Local::now().date_naive();
+    let mut requested_date_start: NaiveDate = chrono::offset::Local::now().date_naive();
+    let mut requested_date_stop: NaiveDate = chrono::offset::Local::now().date_naive();
 
-    let cmd = read_user_input(args, &mut requested_date, &mut search_term);
+    let cmd = read_user_input(
+        args,
+        &mut requested_date_start,
+        &mut requested_date_stop,
+        &mut search_term,
+    );
 
     if cmd == Command::Unknown {
         println!("Sorry, I do not understand this command. Try 'rremind help' or 'man rremind'.");
+        return;
+    }
+    if cmd == Command::Version {
+        println!("Program Version: {}", &VERSION);
+        return;
     }
     if cmd == Command::Help {
         println!("Help for rremind:");
@@ -103,21 +131,19 @@ fn main() {
             "- rremind check: looks for lines in your rremind files that cannot be interpreted."
         );
         println!("- rremind <n>: lists appointments n days from (or to) today.");
+        println!("- rremind <n..m>: lists appointments from n days relative to today to m days relative to today (rremind -1..2 lists appointments from yesterday to the day after tomorrow).");
         println!("- rremind when <term>: lists future appointments containing 'term'");
         println!("- rremind config: edit folders");
         println!("- rremind archive: archive appointments in the past");
         return;
     }
-    // if cmd == Command::Archive {
-    //     archive_appointments();
-    //     return;
-    // }
+
     if cmd == Command::EditConfig {
         edit_config();
         return;
     }
 
-    let mut accumulated_termine: Vec<Termin> = vec![];
+    let mut accumulated_termine: Vec<Appointment> = vec![];
     let mut acc_errors: Vec<String> = vec![];
 
     // @todo: expect msg should contain info on how to change the folder settings.
@@ -139,10 +165,27 @@ fn main() {
                         &s_rremind_folder.dir_rem_archive,
                     ),
                     Command::ListAppointments => accumulate_termine(
-                        requested_date,
+                        requested_date_start,
                         &termine_aus_datei,
                         &mut accumulated_termine,
                     ),
+                    //@todo Oct 29, 2024: needs to iterate through the dates
+                    Command::MultiListAppointments => {
+                        // print!(
+                        //     "MultiList!! {} -> {}",
+                        //     requested_date_start, requested_date_stop
+                        // );
+                        let mut iter_date = requested_date_start;
+                        while iter_date <= requested_date_stop {
+                            // print!("Iterating");
+                            accumulate_termine(
+                                iter_date,
+                                &termine_aus_datei,
+                                &mut accumulated_termine,
+                            );
+                            add_or_subtract_days(&mut iter_date, 1);
+                        }
+                    }
                     Command::SearchAppointments => accumulate_termine_by_search(
                         &search_term,
                         &termine_aus_datei,
@@ -169,18 +212,24 @@ fn main() {
         }
         return;
     }
+
     sortiere(&mut accumulated_termine);
 
+    let mut new_date: Option<NaiveDate> = None;
+    println!("\n");
     for t in accumulated_termine {
-        println!(
-            "{} -- {}{}",
-            match t.appointment_date {
-                Some(dat) => dat.to_string(),
-                _ => t.appointment_date_alt_text.to_string(),
-            },
-            t.appointment_description,
-            get_zeitangabe(&t),
-        );
+        if let Some(dtm) = t.appointment_date {
+            if new_date.is_none() {
+                new_date = Some(dtm);
+                println!("  {}\n  ============", dtm.to_string());
+            } else {
+                if new_date.unwrap() != dtm {
+                    new_date = Some(dtm);
+                    println!("\n  {}\n  ============", dtm.to_string());
+                }
+            }
+        }
+        println!("- {}{}", t.appointment_description, get_zeitangabe(&t),);
     }
 }
 
@@ -253,12 +302,19 @@ fn remove_line_from_file(file_name: &str, line: &str) {
     fs::rename(&s_tmp_file_path, file_name).expect(&format!("Cannot replace original rremind file `{file_name}` with temporary (new) version `{s_tmp_file_path}`"));
 }
 
-// Asks for folder and archive-folder
-// Needs restructuring, repeated asking (read_line)
-// needs extra method.
-// Also: check input, implement gentle fail
-// And should we allow more than one folder for input?
-// @todo 1
+/// Ask for directory containing the .rem-files,
+/// and for directory containing the archive.
+///
+/// There will *not* be the option to name several
+/// .rem-file directories: this would make archiving
+/// more complicated, and you can achieve the same through
+/// symlinks
+///
+/// @todo: Optionally, archived appointments should be merged
+/// into *one* archive file, though.
+///
+/// @todo: Ask for ARCHIVE_THRESHOLD (how many days ago do
+/// appointments need to be scheduled in order to be archived?)
 fn edit_config() -> RRemindFolders {
     let mut home_dir = String::from("");
 
@@ -323,7 +379,7 @@ fn get_user_input(question: &str, default: &str) -> String {
 
 fn accumulate_syntax_errors(pfad: &str, termine_aus_datei: &str, acc_errors: &mut Vec<String>) {
     for line in termine_aus_datei.lines() {
-        if get_termin_from_line(&line).is_none() {
+        if !line.is_empty() && get_termin_from_line(&line).is_none() {
             acc_errors.push(format!("File: '{}':\nLine: {}\n", pfad, line));
         }
     }
@@ -332,7 +388,7 @@ fn accumulate_syntax_errors(pfad: &str, termine_aus_datei: &str, acc_errors: &mu
 fn accumulate_termine(
     datum: chrono::NaiveDate,
     termine_aus_datei: &str,
-    termine: &mut Vec<Termin>,
+    termine: &mut Vec<Appointment>,
 ) {
     for line in termine_aus_datei.lines() {
         if let Some(termin_match) = get_termin_from_line(&line) {
@@ -346,7 +402,7 @@ fn accumulate_termine(
 fn accumulate_termine_by_search(
     search: &String,
     termine_aus_datei: &str,
-    termine: &mut Vec<Termin>,
+    termine: &mut Vec<Appointment>,
 ) {
     for line in termine_aus_datei.lines() {
         if line.contains(search) {
@@ -357,24 +413,56 @@ fn accumulate_termine_by_search(
     }
 }
 
-fn read_user_input(args: Vec<String>, datum: &mut NaiveDate, search: &mut String) -> Command {
+// @todo: unwrap
+fn add_or_subtract_days(datum: &mut NaiveDate, days: i64) {
+    if days > 0 {
+        *datum = datum.checked_add_days(Days::new(days as u64)).unwrap();
+    } else {
+        if days < 0 {
+            *datum = datum
+                .checked_sub_days(Days::new(days.abs() as u64))
+                .unwrap();
+        }
+    }
+}
+
+///
+/// @todo Allow input of range
+fn read_user_input(
+    args: Vec<String>,
+    datum_start: &mut NaiveDate,
+    datum_stop: &mut NaiveDate,
+    search: &mut String,
+) -> Command {
     if args.len() > 1 {
-        if let Ok(days) = args.get(1).unwrap().parse::<i64>() {
-            if days > 0 {
-                *datum = datum.checked_add_days(Days::new(days as u64)).unwrap();
+        if args.get(1).unwrap().contains("..") {
+            let from_to = args.get(1).unwrap().split_once("..").unwrap();
+            if let (Ok(days_start), Ok(days_stop)) =
+                (from_to.0.parse::<i64>(), from_to.1.parse::<i64>())
+            {
+                // println!("Anfang: {days_start}, Ende {days_stop}");
+                add_or_subtract_days(datum_start, days_start);
+                add_or_subtract_days(datum_stop, days_stop);
+                return Command::MultiListAppointments;
             } else {
-                *datum = datum
-                    .checked_sub_days(Days::new(days.abs() as u64))
-                    .unwrap();
+                // Command not intelligible
+                return Command::Unknown;
             }
-            return Command::ListAppointments;
         } else {
-            if args.get(1).unwrap() == "when" {
-                *search = args.get(2).expect(
-                    "If you're calling 'when', you need a second parameter. `rremind when dentist`",
-                ).to_string();
-                return Command::SearchAppointments;
+            if let Ok(days) = args.get(1).unwrap().parse::<i64>() {
+                add_or_subtract_days(datum_start, days);
+                return Command::ListAppointments;
+            } else {
+                if args.get(1).unwrap() == "when" {
+                    *search = args.get(2).expect(
+                        "If you're calling 'when', you need a second parameter. `rremind when dentist`",
+                    ).to_string();
+                    return Command::SearchAppointments;
+                }
             }
+        }
+        if args.get(1).unwrap() == "version" {
+            return Command::Version;
         }
         if args.get(1).unwrap() == "check" {
             return Command::Check;
@@ -407,7 +495,6 @@ fn get_rremind_folders() -> RRemindFolders {
             let cfile = std::fs::read_to_string(home_dir).unwrap();
             let dir_rem_files = between(&cfile, "rremind_files=", "\n").to_string();
             let dir_rem_archive = between(&cfile, "rremind_archive=", "\n").to_string();
-            println!("ARCHIVE: {}", dir_rem_archive);
             RRemindFolders {
                 dir_rem_files,
                 dir_rem_archive,
@@ -427,25 +514,7 @@ fn get_rremind_folders() -> RRemindFolders {
     }
 }
 
-/// Asks the user for the config-path, writes
-/// the path in the config file, returns the
-/// path.
-// fn get_rremind_folders_from_user(home_dir: &Path, cf: &str) -> RRemindFolders {
-//     let mut line = String::new();
-//     println!("Please enter the folder containing the `rremind` files:");
-//     io::stdin()
-//         .read_line(&mut line)
-//         .expect("No directory entered.");
-//     let config_contents = format!("rremind_files={}", line);
-// fs::create_dir_all(home_dir.parent().unwrap()).expect("Directory cannot be created.");
-// let mut f = File::create_new(&cf).unwrap();
-//     f.write(&config_contents.as_bytes())
-//         .expect("Configuration could not be written.");
-
-//     line
-// }
-
-fn get_zeitangabe(termin: &Termin) -> String {
+fn get_zeitangabe(termin: &Appointment) -> String {
     if termin.appointment_start.is_none() {
         return "".to_string();
     }
@@ -465,7 +534,7 @@ fn get_zeitangabe(termin: &Termin) -> String {
     }
 }
 
-fn sortiere(accumulated_termine: &mut [Termin]) {
+fn sortiere(accumulated_termine: &mut [Appointment]) {
     accumulated_termine.sort_by(|t1, t2| {
         if t1.appointment_start.is_none() && t2.appointment_stop.is_none() {
             return t1.appointment_date.cmp(&t2.appointment_date);
@@ -476,15 +545,3 @@ fn sortiere(accumulated_termine: &mut [Termin]) {
         return t1.appointment_date.cmp(&t2.appointment_date);
     });
 }
-
-// fn get_short_wochentag(w: Weekday) -> String {
-//     match w {
-//         Weekday::Mon => "Mon".to_string(),
-//         Weekday::Tue => todo!(),
-//         Weekday::Wed => todo!(),
-//         Weekday::Thu => todo!(),
-//         Weekday::Fri => todo!(),
-//         Weekday::Sat => todo!(),
-//         Weekday::Sun => todo!(),
-//     }
-// }

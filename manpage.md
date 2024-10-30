@@ -2,8 +2,8 @@
 title: RREMIND
 section: 1
 header: User Manual
-footer: rremind 0.0.4
-date: Oktober 12, 2024
+footer: rremind 0.0.5
+date: Oktober 30, 2024
 ---
 # NAME
 
@@ -28,6 +28,9 @@ With the parameter "when" plus a search string, rremind will list the appointmen
 **i**, 
 : list appointments relative to today (i is an integer, e.g. -2 for the day before yesterday)
 
+**n..m**, 
+: list appointments for the specified range relative to today (n, m are integerr, use e.g. -2..1 to list all appointments from the day before yesterday until and including tomorrow)
+
 **when <searchterm>**,
 : list future appointments containing the search-term.
 
@@ -41,7 +44,7 @@ With the parameter "when" plus a search string, rremind will list the appointmen
 : enter or alter the directories where the remind-files are located, and where they are archived. The configuration file can equally well be edited manually (look under $HOME/rremind/rr.rc)
 
 **archive**,
-: archive all appointments that are in the past. This concerns only appointments that are specified with a full date -- periodical entries are not archived. Lines in .rem-files containing past appointments are erased from these files, and appended to files in the archive directory (see 'config' above). Files in the archive directory have the same name as the original .rem-file, but their suffix is .done (rather than .rem).
+: archive all appointments that are in the past. This affects only appointments that are specified with a full date -- periodical entries are not archived. Lines in .rem-files containing past appointments are erased from these files, and appended to files in the archive directory (see 'config' above). Files in the archive directory have the same name as the original .rem-file, but the suffix .done (rather than .rem).
 
 # EXAMPLES
 
@@ -53,6 +56,9 @@ With the parameter "when" plus a search string, rremind will list the appointmen
 
 **rremind -1**
 : list all of yesterday's appointments
+
+**rremind 0..7**
+: list all appointment for today and the coming 7 days
 
 **rremind when dentist**
 : list appointments that contain the word "dentist"

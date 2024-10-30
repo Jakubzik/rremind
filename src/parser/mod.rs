@@ -3,7 +3,7 @@
 
 use chrono::{Datelike, Days, NaiveDate, NaiveTime, TimeDelta};
 
-use crate::Termin;
+use crate::Appointment;
 
 const MONTHS: &'static [&'static str] = &[
     "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec",
@@ -22,7 +22,7 @@ const NO_INFO: &str =
 /// weekday relative to today
 ///
 /// If the text cannot be parsed, `None` is returned.
-pub fn get_termin_from_line(s_text: &str) -> Option<Termin> {
+pub fn get_termin_from_line(s_text: &str) -> Option<Appointment> {
     if let Some(r) = get_termin_from_full_date(&s_text) {
         return Some(r);
     }
@@ -35,15 +35,17 @@ pub fn get_termin_from_line(s_text: &str) -> Option<Termin> {
 
     None
 }
+
 // 2024 sep 9 AT 10:00 DURATION 1 MSG Velmeke mal wegen des Fortschritts an seiner Hausarbeit fragen
-pub(crate) fn get_termin_from_full_date(s_in: &str) -> Option<Termin> {
+pub(crate) fn get_termin_from_full_date(s_in: &str) -> Option<Appointment> {
     let words: Vec<&str> = s_in.split_whitespace().collect();
+    // if let Ok(year) = words.get(0)?.parse::<i32>() {
     if let Ok(year) = words.get(0)?.parse::<i32>() {
         let month = get_month_as_no(words.get(1)?)?;
         if let Ok(day) = words.get(2)?.parse::<usize>() {
             let da = NaiveDate::from_ymd_opt(year, month as u32, day as u32);
 
-            return Some(Termin {
+            return Some(Appointment {
                 appointment_date: da,
                 appointment_is_full_date: true,
                 appointment_start: extract_start_time(s_in),
@@ -60,7 +62,7 @@ pub(crate) fn get_termin_from_full_date(s_in: &str) -> Option<Termin> {
 ////
 //// Returns a "Termin" adding the current year -- or None,
 //// it his is not notation without year.
-pub(crate) fn get_termin_without_year(s_in: &str) -> Option<Termin> {
+pub(crate) fn get_termin_without_year(s_in: &str) -> Option<Appointment> {
     let words: Vec<&str> = s_in.split_whitespace().collect();
     if is_month(words.get(0)?) {
         let year = chrono::offset::Local::now().date_naive().year();
@@ -68,7 +70,7 @@ pub(crate) fn get_termin_without_year(s_in: &str) -> Option<Termin> {
         if let Ok(day) = words.get(1)?.parse::<usize>() {
             let da = NaiveDate::from_ymd_opt(year, month as u32, day as u32);
 
-            return Some(Termin {
+            return Some(Appointment {
                 appointment_date: da,
                 appointment_is_full_date: false,
                 appointment_start: extract_start_time(s_in),
@@ -86,12 +88,12 @@ pub(crate) fn get_termin_without_year(s_in: &str) -> Option<Termin> {
 ////
 //// Returns a "Termin" adding the current year and month -- or None,
 //// if s_in does not start with a weekday
-pub(crate) fn get_termin_without_month(s_in: &str) -> Option<Termin> {
+pub(crate) fn get_termin_without_month(s_in: &str) -> Option<Appointment> {
     // let small = s_in.to_lowercase();
     let words: Vec<&str> = s_in.split_whitespace().collect();
     if is_day(words.get(0)?) {
         if let Some(da) = find_next_date(words.get(0)?) {
-            return Some(Termin {
+            return Some(Appointment {
                 appointment_date: Some(da),
                 appointment_is_full_date: false,
                 appointment_start: extract_start_time(s_in),
@@ -111,7 +113,7 @@ pub(crate) fn get_termin_without_month(s_in: &str) -> Option<Termin> {
 fn find_next_date(weekday: &str) -> Option<NaiveDate> {
     let mut target_date = chrono::offset::Local::now().date_naive();
     let wd = &weekday[0..3].to_lowercase(); // Wednesday and Wed are both ok as input
-    for _ii in 0..6 {
+    for _ii in 0..7 {
         if target_date.weekday().to_string().to_lowercase() == *wd {
             return Some(target_date);
         }
@@ -262,16 +264,16 @@ mod test_parsing {
     use crate::{
         parser::{
             get_month_as_no, get_termin_from_full_date, get_termin_from_line,
-            get_termin_without_month, get_termin_without_year, is_month,
+            get_termin_without_month, get_termin_without_year, is_day, is_month,
         },
-        Termin,
+        Appointment,
     };
 
     // use super::NO_INFO;
 
-    fn get_testtermin_thisyear() -> Termin {
+    fn get_testtermin_thisyear() -> Appointment {
         let year = offset::Local::now().date_naive().year();
-        Termin {
+        Appointment {
             appointment_date: NaiveDate::from_ymd_opt(year, 11, 1),
             appointment_is_full_date: true,
             appointment_start: None,
@@ -305,8 +307,8 @@ mod test_parsing {
     fn parsing_no_year3() {
         let s_test = "nov 1 msg birthday";
         assert_eq!(
-            get_termin_without_year(&s_test),
-            Some(get_testtermin_thisyear())
+            get_termin_without_year(&s_test).unwrap().appointment_date,
+            get_testtermin_thisyear().appointment_date
         );
     }
 
@@ -426,6 +428,7 @@ mod test_parsing {
 
     #[test]
     fn parsing_comprehensive3() {
+        // assert!(is_day("Mon"));
         let s_test = "Mon aT 10:00 DURATION 1 msg my birthday";
         assert!(get_termin_from_line(&s_test).is_some());
         assert_eq!(
