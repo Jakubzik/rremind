@@ -1,3 +1,7 @@
+# version 0.0.6
+
+- `rremind <DATE>` now lists appointments of <DATE> (DATE can be ISO or German format).
+
 # version 0.0.5
 
 - fixed bug that made rremind print the archive folder at every call
@@ -46,6 +50,7 @@
 
 # History
 
+[x] List appointments of specific date [v 0.0.6]
 [x] Implement "version" command. [v 0.0.5]
 [x] Make path to .rem-folder mutable [v 0.0.4]
 [x] Bug: "When" fails to give the time of the appointment [v 0.0.4]

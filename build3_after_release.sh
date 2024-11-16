@@ -2,7 +2,7 @@
 #
 # ======================================
 # EDIT
-# PROGRAMMVERSION="0.0.5" 
+# PROGRAMMVERSION="0.0.6" 
 # MSG="Added functionality to edit config file and archive appointments that are past." # COMMIT MSG FOR GIT
 # ======================================
 

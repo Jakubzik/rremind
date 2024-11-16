@@ -19,17 +19,22 @@ rremind -- a reminder service inspired by Diane Skoll's `remind`
 
 Without parameter, "rremind" will list today's appointments.
 
+With a date as parameter, "rremind" will list this date's appointments. Date can be in ISO or German format (i.e. 2025-3-10 or 10.3.2025).
+
 With an integer parameter i, "rremind" will list the appointments i days relative to today. (`rremind -1` will show yesterday's appointments, `rremind 2` will list the appointments on the day after tomorrow).
 
 With the parameter "when" plus a search string, rremind will list the appointments whose description contains the search string (`rremind when dentist` will list the appointments that contain the word "dentist").
 
 # OPTIONS
 
-**i**, 
+**i**,
 : list appointments relative to today (i is an integer, e.g. -2 for the day before yesterday)
 
 **n..m**, 
 : list appointments for the specified range relative to today (n, m are integerr, use e.g. -2..1 to list all appointments from the day before yesterday until and including tomorrow)
+
+**date**,
+: list appointments on the given date. Date format is ISO (2025-4-25) or German (25.4.2024).
 
 **when <searchterm>**,
 : list future appointments containing the search-term.
@@ -50,6 +55,12 @@ With the parameter "when" plus a search string, rremind will list the appointmen
 
 **rremind**
 : list all of today's appointments
+
+**rremind 2025-10-1**
+: list all appointments on the first of October in 2025.
+
+**rremind 10.1.2025**
+: list all appointments on the first of October in 2025.
 
 **rremind 3**
 : list all appointments three days from today

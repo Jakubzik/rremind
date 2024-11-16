@@ -2,7 +2,7 @@ mod parser;
 
 use chrono::Utc;
 pub(crate) use chrono::{Days, NaiveDate};
-use parser::{between, get_termin_from_line};
+use parser::{as_date, between, get_termin_from_line, is_date};
 use std::{
     env::{self},
     fs::{self, DirEntry, File, OpenOptions},
@@ -131,6 +131,7 @@ fn main() {
             "- rremind check: looks for lines in your rremind files that cannot be interpreted."
         );
         println!("- rremind <n>: lists appointments n days from (or to) today.");
+        println!("- rremind <dtm>: lists appointments on date <dtm>; dtm is either iso or German format (either 2025-3-10 or 10.3.2025).");
         println!("- rremind <n..m>: lists appointments from n days relative to today to m days relative to today (rremind -1..2 lists appointments from yesterday to the day after tomorrow).");
         println!("- rremind when <term>: lists future appointments containing 'term'");
         println!("- rremind config: edit folders");
@@ -153,7 +154,6 @@ fn main() {
             s_rremind_folder.dir_rem_files
         ));
 
-    // panic!("Archiv ist: {}", s_rremind_folder.dir_rem_archive);
     for path in directory_with_remind_files {
         if let Ok(datei) = path {
             if datei.path().to_str().unwrap().ends_with(&".rem") {
@@ -164,6 +164,11 @@ fn main() {
                         &termine_aus_datei,
                         &s_rremind_folder.dir_rem_archive,
                     ),
+                    // Command::ListAppointmentsByDate => accumulate_termine(
+                    //     requested_date,
+                    //     &termine_aus_datei,
+                    //     &mut accumulated_termine,
+                    // ),
                     Command::ListAppointments => accumulate_termine(
                         requested_date_start,
                         &termine_aus_datei,
@@ -171,10 +176,6 @@ fn main() {
                     ),
                     //@todo Oct 29, 2024: needs to iterate through the dates
                     Command::MultiListAppointments => {
-                        // print!(
-                        //     "MultiList!! {} -> {}",
-                        //     requested_date_start, requested_date_stop
-                        // );
                         let mut iter_date = requested_date_start;
                         while iter_date <= requested_date_stop {
                             // print!("Iterating");
@@ -460,6 +461,11 @@ fn read_user_input(
                     return Command::SearchAppointments;
                 }
             }
+        }
+
+        if is_date(args.get(1).unwrap()) {
+            *datum_start = as_date(args.get(1).unwrap()).unwrap();
+            return Command::ListAppointments;
         }
         if args.get(1).unwrap() == "version" {
             return Command::Version;

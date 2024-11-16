@@ -14,6 +14,21 @@ const DAYS: &'static [&'static str] = &["mon", "tue", "wed", "thu", "fri", "sat"
 const NO_INFO: &str =
     "Appointment contains no information (add 'msg' or 'rem' to the line to change that)";
 
+pub(crate) fn is_date(s_text: &str) -> bool {
+    as_date(s_text).is_some()
+}
+
+/// s_text can either be German or ISO format
+pub(crate) fn as_date(s_text: &str) -> Option<NaiveDate> {
+    if let Ok(date) = NaiveDate::parse_from_str(s_text, "%Y-%m-%d") {
+        return Some(date);
+    } else {
+        if let Ok(date) = NaiveDate::parse_from_str(s_text, "%d.%m.%Y") {
+            return Some(date);
+        }
+    }
+    None
+}
 /// Parse s_text and return a `Termin` if possible.
 ///
 /// Appointments without year indication are mapped to the current year
@@ -57,6 +72,7 @@ pub(crate) fn get_termin_from_full_date(s_in: &str) -> Option<Appointment> {
     }
     None
 }
+
 //// Read yearly appointments, such as
 //// jan 7 msg birthday ds
 ////
@@ -264,7 +280,7 @@ mod test_parsing {
     use crate::{
         parser::{
             get_month_as_no, get_termin_from_full_date, get_termin_from_line,
-            get_termin_without_month, get_termin_without_year, is_day, is_month,
+            get_termin_without_month, get_termin_without_year, is_date, is_day, is_month,
         },
         Appointment,
     };
@@ -281,6 +297,16 @@ mod test_parsing {
             appointment_description: "birthday".to_string(), //NO_INFO.to_string(),
             appointment_date_alt_text: "".to_string(),
         }
+    }
+
+    #[test]
+    fn parsing() {
+        let s_test = "2024-1-13";
+        assert!(is_date(s_test));
+        let s_test = "13.1.2024";
+        assert!(is_date(s_test));
+        let s_test = "13.13.2024";
+        assert!(!is_date(s_test));
     }
 
     #[test]

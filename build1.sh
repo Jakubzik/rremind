@@ -2,8 +2,8 @@
 #
 # ======================================
 # EDIT
-PROGRAMMVERSION="0.0.5" 
-MSG="Added option to list appointment of a range (0..7 for the week)" # COMMIT MSG FOR GIT
+PROGRAMMVERSION="0.0.6" 
+MSG="Ask for appointments on a specific date." # COMMIT MSG FOR GIT
 # ======================================
 
 function check_test_outcome {

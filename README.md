@@ -18,7 +18,7 @@ These files can contain **weekly dates**...
 
 ... or **specific dates** ...
 
-``2024 November 5 AT 10:00 DURATION 20 REM Buy myself a birthday present``
+``2025 May 17 AT 10:00 DURATION 20 REM Give Annika her birthday present``
 
 (Duration can be hours or minutes; values > 8 are interpreted as minutes; time is optional)
 
@@ -62,12 +62,13 @@ Arguments:\
 
 Next steps:
 
-[ ] Make "archive" accept a parameter specifying how old the appointments need to be for archiving.
-[ ] Make archive configurable so that it collects all archives in *one* file.
-[ ] Make archive *report* what it's doing
-[ ] "sort" command to sort the rem files chronologically.
-[ ] "put" command to add appointments.
-[ ] Accept date-range input: rremind 0..7 to show appointments of the next 7 days.
-[ ] Make date format more flexible.
-[ ] Add nicely formatted output (for terminal).
+[ ] Make appointments "taggable" and filter listings by tag and by file.\
+[ ] Make "archive" accept a parameter specifying how old the appointments need to be for archiving.\
+[ ] Make archive configurable so that it collects all archives in *one* file.\
+[ ] Make archive *report* what it's doing\
+[ ] "sort" command to sort the rem files chronologically.\
+[ ] "put" command to add appointments.\
+[ ] Accept date-range input: rremind 0..7 to show appointments of the next 7 days.\
+[ ] Make date format more flexible.\
+[ ] Add nicely formatted output (for terminal).\
 [ ] Add .deb package.
