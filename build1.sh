@@ -2,7 +2,7 @@
 #
 # ======================================
 # EDIT
-PROGRAMMVERSION="0.0.6" 
+PROGRAMMVERSION="0.0.7" 
 MSG="Ask for appointments on a specific date." # COMMIT MSG FOR GIT
 # ======================================
 
