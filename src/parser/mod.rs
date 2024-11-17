@@ -29,6 +29,7 @@ pub(crate) fn as_date(s_text: &str) -> Option<NaiveDate> {
     }
     None
 }
+
 /// Parse s_text and return a `Termin` if possible.
 ///
 /// Appointments without year indication are mapped to the current year
@@ -37,14 +38,14 @@ pub(crate) fn as_date(s_text: &str) -> Option<NaiveDate> {
 /// weekday relative to today
 ///
 /// If the text cannot be parsed, `None` is returned.
-pub fn get_termin_from_line(s_text: &str) -> Option<Appointment> {
+pub fn get_termin_from_line(s_text: &str, start_date: Option<NaiveDate>) -> Option<Appointment> {
     if let Some(r) = get_termin_from_full_date(&s_text) {
         return Some(r);
     }
-    if let Some(s) = get_termin_without_month(&s_text) {
+    if let Some(s) = get_termin_without_month(&s_text, start_date) {
         return Some(s);
     }
-    if let Some(t) = get_termin_without_year(&s_text) {
+    if let Some(t) = get_termin_without_year(&s_text, start_date) {
         return Some(t);
     }
 
@@ -78,10 +79,16 @@ pub(crate) fn get_termin_from_full_date(s_in: &str) -> Option<Appointment> {
 ////
 //// Returns a "Termin" adding the current year -- or None,
 //// it his is not notation without year.
-pub(crate) fn get_termin_without_year(s_in: &str) -> Option<Appointment> {
+pub(crate) fn get_termin_without_year(
+    s_in: &str,
+    start_date: Option<NaiveDate>,
+) -> Option<Appointment> {
     let words: Vec<&str> = s_in.split_whitespace().collect();
     if is_month(words.get(0)?) {
-        let year = chrono::offset::Local::now().date_naive().year();
+        let year = match start_date {
+            None => chrono::offset::Local::now().date_naive().year(),
+            Some(yr) => yr.year(),
+        };
         let month = get_month_as_no(s_in)?;
         if let Ok(day) = words.get(1)?.parse::<usize>() {
             let da = NaiveDate::from_ymd_opt(year, month as u32, day as u32);
@@ -104,11 +111,14 @@ pub(crate) fn get_termin_without_year(s_in: &str) -> Option<Appointment> {
 ////
 //// Returns a "Termin" adding the current year and month -- or None,
 //// if s_in does not start with a weekday
-pub(crate) fn get_termin_without_month(s_in: &str) -> Option<Appointment> {
+pub(crate) fn get_termin_without_month(
+    s_in: &str,
+    start_date: Option<NaiveDate>,
+) -> Option<Appointment> {
     // let small = s_in.to_lowercase();
     let words: Vec<&str> = s_in.split_whitespace().collect();
     if is_day(words.get(0)?) {
-        if let Some(da) = find_next_date(words.get(0)?) {
+        if let Some(da) = find_next_date(words.get(0)?, start_date) {
             return Some(Appointment {
                 appointment_date: Some(da),
                 appointment_is_full_date: false,
@@ -126,8 +136,11 @@ pub(crate) fn get_termin_without_month(s_in: &str) -> Option<Appointment> {
 /// If today, for example, is Sat, Oct 5, 2024,
 /// and weekday is "mon", the method returns
 /// Oct 7, 2024
-fn find_next_date(weekday: &str) -> Option<NaiveDate> {
-    let mut target_date = chrono::offset::Local::now().date_naive();
+fn find_next_date(weekday: &str, start_date: Option<NaiveDate>) -> Option<NaiveDate> {
+    let mut target_date = match start_date {
+        None => chrono::offset::Local::now().date_naive(),
+        Some(dtm) => dtm,
+    };
     let wd = &weekday[0..3].to_lowercase(); // Wednesday and Wed are both ok as input
     for _ii in 0..7 {
         if target_date.weekday().to_string().to_lowercase() == *wd {
@@ -320,20 +333,22 @@ mod test_parsing {
     fn parsing_no_year2() {
         // let s_test = "jan 6 msg birthday";
         let s_test = "nov 1 msg birthday";
-        assert!(get_termin_without_year(&s_test).is_some());
+        assert!(get_termin_without_year(&s_test, None).is_some());
 
         let s_test = "FeBrUARY 11 msg birthday";
-        assert!(get_termin_without_year(&s_test).is_some());
+        assert!(get_termin_without_year(&s_test, None).is_some());
 
         let s_test = "PFeBrUARYo 11 msg birthday";
-        assert!(get_termin_without_year(&s_test).is_none());
+        assert!(get_termin_without_year(&s_test, None).is_none());
     }
 
     #[test]
     fn parsing_no_year3() {
         let s_test = "nov 1 msg birthday";
         assert_eq!(
-            get_termin_without_year(&s_test).unwrap().appointment_date,
+            get_termin_without_year(&s_test, None)
+                .unwrap()
+                .appointment_date,
             get_testtermin_thisyear().appointment_date
         );
     }
@@ -341,46 +356,46 @@ mod test_parsing {
     #[test]
     fn parsing_no_year4() {
         let s_test = "asdf 1 msg birthday";
-        assert!(get_termin_without_year(&s_test).is_none());
+        assert!(get_termin_without_year(&s_test, None).is_none());
     }
 
     #[test]
     fn parsing_no_year5() {
         let s_test = "nov mon msg birthday";
-        assert!(get_termin_without_year(&s_test).is_none());
+        assert!(get_termin_without_year(&s_test, None).is_none());
     }
 
     #[test]
     fn parsing_weekly() {
         let s_test = "mon at 10:00 msg birthday";
         // assert!(get_termin_without_year(&s_test).is_none());
-        assert!(get_termin_without_month(&s_test).is_some());
+        assert!(get_termin_without_month(&s_test, None).is_some());
     }
 
     #[test]
     fn parsing_weekly4() {
         let s_test = "ton at 10:00 msg birthday";
         // assert!(get_termin_without_year(&s_test).is_none());
-        assert!(get_termin_without_month(&s_test).is_none());
+        assert!(get_termin_without_month(&s_test, None).is_none());
     }
 
     #[test]
     fn parsing_weekly2() {
         let s_test = "mon at 10:00 msg birthday";
         assert_eq!(
-            get_termin_without_month(&s_test)
+            get_termin_without_month(&s_test, None)
                 .unwrap()
                 .appointment_date
                 .unwrap()
                 .weekday()
                 .to_string(),
-            "Mon".to_string()
+            "Mon".to_string(),
         );
 
         let s_test = "Wednesday at 10:00 msg birthday";
-        assert!(get_termin_without_month(&s_test).is_some());
+        assert!(get_termin_without_month(&s_test, None).is_some());
         assert_eq!(
-            get_termin_without_month(&s_test)
+            get_termin_without_month(&s_test, None)
                 .unwrap()
                 .appointment_date
                 .unwrap()
@@ -388,20 +403,20 @@ mod test_parsing {
                 .to_string(),
             "Wed".to_string()
         );
-        assert!(get_termin_without_month(&s_test)
+        assert!(get_termin_without_month(&s_test, None)
             .unwrap()
             .appointment_start
             .is_some());
 
         assert_eq!(
-            get_termin_without_month(&s_test)
+            get_termin_without_month(&s_test, None)
                 .unwrap()
                 .appointment_start
                 .unwrap(),
             NaiveTime::from_str("10:00").unwrap()
         );
 
-        assert!(get_termin_without_month(&s_test)
+        assert!(get_termin_without_month(&s_test, None)
             .unwrap()
             .appointment_stop
             .is_none());
@@ -426,9 +441,9 @@ mod test_parsing {
     fn parsing_comprehensive1() {
         let s_test = "2024 nov 6 aT 10:00 DURATION 1 msg my birthday";
         // assert!(get_termin_without_year(&s_test).is_none());
-        assert!(get_termin_from_line(&s_test).is_some());
+        assert!(get_termin_from_line(&s_test, None).is_some());
         assert_eq!(
-            get_termin_from_line(&s_test)
+            get_termin_from_line(&s_test, None)
                 .unwrap()
                 .appointment_date
                 .unwrap()
@@ -441,9 +456,9 @@ mod test_parsing {
     fn parsing_comprehensive2() {
         let s_test = "nov 6 aT 10:00 DURATION 1 msg my birthday";
         // assert!(get_termin_without_year(&s_test).is_none());
-        assert!(get_termin_from_line(&s_test).is_some());
+        assert!(get_termin_from_line(&s_test, None).is_some());
         assert_eq!(
-            get_termin_from_line(&s_test)
+            get_termin_from_line(&s_test, None)
                 .unwrap()
                 .appointment_date
                 .unwrap()
@@ -456,9 +471,9 @@ mod test_parsing {
     fn parsing_comprehensive3() {
         // assert!(is_day("Mon"));
         let s_test = "Mon aT 10:00 DURATION 1 msg my birthday";
-        assert!(get_termin_from_line(&s_test).is_some());
+        assert!(get_termin_from_line(&s_test, None).is_some());
         assert_eq!(
-            get_termin_from_line(&s_test)
+            get_termin_from_line(&s_test, None)
                 .unwrap()
                 .appointment_date
                 .unwrap()
@@ -472,7 +487,7 @@ mod test_parsing {
     fn parsing_comprehensive4() {
         let s_test = "Mun aT 10:00 DURATION 1 msg my birthday";
         // assert!(get_termin_without_year(&s_test).is_none());
-        assert!(get_termin_from_line(&s_test).is_none());
+        assert!(get_termin_from_line(&s_test, None).is_none());
     }
 
     #[test]
@@ -480,7 +495,7 @@ mod test_parsing {
         let s_test = "Mon aT 10:00 DURATION 1 msg my birthday";
         // assert!(get_termin_without_year(&s_test).is_none());
         assert_eq!(
-            get_termin_from_line(&s_test)
+            get_termin_from_line(&s_test, None)
                 .unwrap()
                 .appointment_description,
             "my birthday"

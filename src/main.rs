@@ -1,6 +1,6 @@
 mod parser;
 
-use chrono::Utc;
+use chrono::{Datelike, Utc};
 pub(crate) use chrono::{Days, NaiveDate};
 use parser::{as_date, between, get_termin_from_line, is_date};
 use std::{
@@ -22,7 +22,7 @@ use std::{
 // If we're not on Linux, don't bother
 const EXIT_CODE_NO_HOME_DIR: i32 = 1;
 const ARCHIVE_THRESHOLD: usize = 1; // @todo make threshold configurable
-const VERSION: &str = "0.0.5";
+const VERSION: &str = "0.0.7";
 
 #[derive(Debug)]
 struct RRemindFolders {
@@ -222,11 +222,19 @@ fn main() {
         if let Some(dtm) = t.appointment_date {
             if new_date.is_none() {
                 new_date = Some(dtm);
-                println!("  {}\n  ============", dtm.to_string());
+                println!(
+                    "  {} ({})\n  ================",
+                    dtm.to_string(),
+                    dtm.weekday()
+                );
             } else {
                 if new_date.unwrap() != dtm {
                     new_date = Some(dtm);
-                    println!("\n  {}\n  ============", dtm.to_string());
+                    println!(
+                        "\n  {} ({})\n  ================",
+                        dtm.to_string(),
+                        dtm.weekday()
+                    );
                 }
             }
         }
@@ -254,7 +262,7 @@ fn archive_appointments(file_name: &DirEntry, contents: &str, archiv_folder: &st
     // println!("Archivname: {}", archive_name);
     // println!("... voll: {}{}", archiv_folder, archive_name);
     for line in contents.lines() {
-        match get_termin_from_line(&line) {
+        match get_termin_from_line(&line, None) {
             Some(termin) => {
                 if termin.is_past() {
                     archive_appointment(&line, &file_name, &archive_name);
@@ -380,7 +388,7 @@ fn get_user_input(question: &str, default: &str) -> String {
 
 fn accumulate_syntax_errors(pfad: &str, termine_aus_datei: &str, acc_errors: &mut Vec<String>) {
     for line in termine_aus_datei.lines() {
-        if !line.is_empty() && get_termin_from_line(&line).is_none() {
+        if !line.is_empty() && get_termin_from_line(&line, None).is_none() {
             acc_errors.push(format!("File: '{}':\nLine: {}\n", pfad, line));
         }
     }
@@ -392,7 +400,8 @@ fn accumulate_termine(
     termine: &mut Vec<Appointment>,
 ) {
     for line in termine_aus_datei.lines() {
-        if let Some(termin_match) = get_termin_from_line(&line) {
+        if let Some(termin_match) = get_termin_from_line(&line, Some(datum)) {
+            // <-- // @todo Nov 17, 2024: Really? Some(datum)? Doing this simply to compile
             if termin_match.appointment_date == Some(datum) {
                 termine.push(termin_match);
             }
@@ -407,7 +416,7 @@ fn accumulate_termine_by_search(
 ) {
     for line in termine_aus_datei.lines() {
         if line.contains(search) {
-            if let Some(found) = get_termin_from_line(&line) {
+            if let Some(found) = get_termin_from_line(&line, None) {
                 termine.push(found);
             }
         }

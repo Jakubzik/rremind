@@ -62,10 +62,14 @@ Arguments:\
 
 Next steps:
 
+[ ] Make archive *report* what it's doing\
 [ ] Make appointments "taggable" and filter listings by tag and by file.\
+    [ ] Color code appointments/tags/files\
+    [ ] Special tag `nonblocking` meaning that appointments can still go in that slot\
+    [ ] `rremind free 2 hours` to make rremind suggest appointments that take two house\
+    [ ] Invent mechanism to manage doodles and the likes (i.e. block dates and unblock when date is fixed).
 [ ] Make "archive" accept a parameter specifying how old the appointments need to be for archiving.\
 [ ] Make archive configurable so that it collects all archives in *one* file.\
-[ ] Make archive *report* what it's doing\
 [ ] "sort" command to sort the rem files chronologically.\
 [ ] "put" command to add appointments.\
 [ ] Accept date-range input: rremind 0..7 to show appointments of the next 7 days.\

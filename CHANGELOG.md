@@ -1,3 +1,9 @@
+# version 0.0.7
+
+- Bugfix (1): `rremind <DATE>` did not work with yearly dates.
+
+- Bugfix (2): version showed old version.
+
 # version 0.0.6
 
 - `rremind <DATE>` now lists appointments of <DATE> (DATE can be ISO or German format).
