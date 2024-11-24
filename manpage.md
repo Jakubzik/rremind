@@ -2,8 +2,8 @@
 title: RREMIND
 section: 1
 header: User Manual
-footer: rremind 0.0.7
-date: November 17, 2024
+footer: rremind 0.0.8
+date: November 24, 2024
 ---
 # NAME
 
@@ -21,9 +21,9 @@ Without parameter, "rremind" will list today's appointments.
 
 With a date as parameter, "rremind" will list this date's appointments. Date can be in ISO or German format (i.e. 2025-3-10 or 10.3.2025).
 
-With an integer parameter i, "rremind" will list the appointments i days relative to today. (`rremind -1` will show yesterday's appointments, `rremind 2` will list the appointments on the day after tomorrow).
+With an integer parameter `i`, "rremind" will list the appointments `i` days relative to today. (`rremind -1` will show yesterday's appointments, `rremind 2` will list the appointments on the day after tomorrow).
 
-With the parameter "when" plus a search string, rremind will list the appointments whose description contains the search string (`rremind when dentist` will list the appointments that contain the word "dentist").
+With the parameter `when` plus a search string, rremind will list the appointments whose description contains the search string (`rremind when dentist` will list the appointments that contain the word "dentist").
 
 # OPTIONS
 
@@ -50,6 +50,17 @@ With the parameter "when" plus a search string, rremind will list the appointmen
 
 **archive**,
 : archive all appointments that are in the past. This affects only appointments that are specified with a full date -- periodical entries are not archived. Lines in .rem-files containing past appointments are erased from these files, and appended to files in the archive directory (see 'config' above). Files in the archive directory have the same name as the original .rem-file, but the suffix .done (rather than .rem).
+
+# SYNTAX OF REM-FILE ENTRIES
+
+**yearly dates**
+: <Month> <DAY> [AT optional time], INFO; for example: `Nov 24, John's birthday`, or `Nov 24 REM John's birthday`, or `Nov 24 at 22:00, John's birthday party`
+
+**weekly dates**
+: <Day> [AT optional time], INFO; for example `Mon at 10:00, dancing lessons`;
+
+**specific dates**
+: <Year> <Month> <DAY> [AT optional time], INFO.
 
 # EXAMPLES
 

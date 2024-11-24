@@ -8,11 +8,16 @@ Pick a folder to store your appointments and the dates you would like to be remi
 
 These files can contain **weekly dates**...
 
-``Mon AT 17:00 DURATION 1 MSG Jour Fix with John Dee``
+``Mon AT 17:00 DURATION 1 MSG Jour Fix with John Dee``, or
+
+``Mon AT 17:00-18:00, Jour Fix with John Dee``.
+
 
 ... or **yearly dates** ...
 
-``jan 1 AT 11:00 DURATION 3 MSG Clean up after new year's party``
+``jan 1 AT 11:00 DURATION 3 MSG Clean up after new year's party``, or
+
+``jan 1 AT 11:00-14:00, Clean up after new year's party``, or
 
 ``nov 6 REM Heiko's birthday``
 
@@ -62,7 +67,6 @@ Arguments:\
 
 Next steps:
 
-[ ] Make archive *report* what it's doing\
 [ ] Make appointments "taggable" and filter listings by tag and by file.\
     [ ] Color code appointments/tags/files\
     [ ] Special tag `nonblocking` meaning that appointments can still go in that slot\

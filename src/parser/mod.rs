@@ -1,9 +1,19 @@
 // Parsing Dates
 // First application is a checkup of the configured files
 
+// use core::slice::SlicePattern;
+// use std::ops::Index;
+
 use chrono::{Datelike, Days, NaiveDate, NaiveTime, TimeDelta};
 
 use crate::Appointment;
+
+// Start_Time and Stop_Time: 10:00 DURATION 20 is possible, make
+// 10:00-10:20 possible, too
+struct TimeHelper {
+    start: Option<NaiveTime>,
+    stop: Option<NaiveTime>,
+}
 
 const MONTHS: &'static [&'static str] = &[
     "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec",
@@ -61,17 +71,70 @@ pub(crate) fn get_termin_from_full_date(s_in: &str) -> Option<Appointment> {
         if let Ok(day) = words.get(2)?.parse::<usize>() {
             let da = NaiveDate::from_ymd_opt(year, month as u32, day as u32);
 
+            let t: TimeHelper = extract_duration(s_in);
+
             return Some(Appointment {
                 appointment_date: da,
                 appointment_is_full_date: true,
-                appointment_start: extract_start_time(s_in),
-                appointment_stop: extract_stop_time(s_in),
+                // appointment_start: extract_start_time(s_in),
+                // appointment_stop: extract_stop_time(s_in),
+                appointment_start: t.start,
+                appointment_stop: t.stop,
                 appointment_description: extract_description(s_in),
                 appointment_date_alt_text: extract_datum_text(s_in),
             });
         }
     }
     None
+}
+
+// Either Jan 24 2024 AT 10:00 DURATION 1, or
+//        Jan 24 2024 AT 10:00-12:00
+fn extract_duration(s_in: &str) -> TimeHelper {
+    // See if we have AT ... - ...
+    let small = s_in.to_lowercase();
+
+    // We're looking for notations with "-" first,
+    // i.e. 10:00-11:30 rather than 10:00 DURATION 90
+    if let Some(index) = small.find(" at ") {
+        let start = index + " at ".len();
+        let end = match small.len() >= start + "10:00 - 11:00".len() {
+            true => start + "10:00 - 11:00".len(),
+            _ => start + "10:00-11:00".len(),
+        };
+
+        // Avoid getting in the middle of unicode bytes
+        let text_vec = s_in.chars().collect::<Vec<_>>();
+        let s_i = text_vec[start..end].iter().cloned().collect::<String>();
+
+        // Is the duration indicated with "-", i.e. 10:00-11:00 ?
+        if s_i.contains("-") {
+            let times = s_i.split_once("-").unwrap();
+            return TimeHelper {
+                start: NaiveTime::parse_from_str(times.0.trim(), "%H:%M").ok(),
+                stop: get_stop(times.1.trim()),
+            };
+        }
+    }
+
+    // This works for "DURATION" notation
+    return TimeHelper {
+        start: extract_start_time(s_in),
+        stop: extract_stop_time(s_in),
+    };
+}
+
+// The end time could end like this: "-8:00 M", or "-8:00, get up"
+// .get_stop will trim these to "8:00"
+// Input (`excerpt`) must already be trimmed
+fn get_stop(excerpt: &str) -> Option<NaiveTime> {
+    match excerpt.contains(" ") {
+        true => NaiveTime::parse_from_str(between(excerpt, "", " "), "%H:%M").ok(),
+        _ => match excerpt.contains(",") {
+            true => NaiveTime::parse_from_str(between(excerpt, "", ","), "%H:%M").ok(),
+            _ => NaiveTime::parse_from_str(excerpt, "%H:%M").ok(),
+        },
+    }
 }
 
 //// Read yearly appointments, such as
@@ -90,20 +153,31 @@ pub(crate) fn get_termin_without_year(
             Some(yr) => yr.year(),
         };
         let month = get_month_as_no(s_in)?;
-        if let Ok(day) = words.get(1)?.parse::<usize>() {
+        if let Ok(day) = strip_final_comma(words.get(1)?).parse::<usize>() {
             let da = NaiveDate::from_ymd_opt(year, month as u32, day as u32);
 
+            let t: TimeHelper = extract_duration(s_in);
             return Some(Appointment {
                 appointment_date: da,
                 appointment_is_full_date: false,
-                appointment_start: extract_start_time(s_in),
-                appointment_stop: extract_stop_time(s_in),
+                appointment_start: t.start,
+                appointment_stop: t.stop,
                 appointment_description: extract_description(s_in),
                 appointment_date_alt_text: extract_datum_text(s_in),
             });
         }
     }
     None
+}
+
+// Nov 24, Sunday: I want to be able to understand "24," as "24", so
+// final commas are stripped
+fn strip_final_comma(get: &str) -> &str {
+    if get.ends_with(",") {
+        &get[0..get.len() - 1]
+    } else {
+        get
+    }
 }
 
 //// Read weekly appointments, such as
@@ -119,11 +193,12 @@ pub(crate) fn get_termin_without_month(
     let words: Vec<&str> = s_in.split_whitespace().collect();
     if is_day(words.get(0)?) {
         if let Some(da) = find_next_date(words.get(0)?, start_date) {
+            let t: TimeHelper = extract_duration(s_in);
             return Some(Appointment {
                 appointment_date: Some(da),
                 appointment_is_full_date: false,
-                appointment_start: extract_start_time(s_in),
-                appointment_stop: extract_stop_time(s_in),
+                appointment_start: t.start,
+                appointment_stop: t.stop,
                 appointment_description: extract_description(s_in),
                 appointment_date_alt_text: extract_datum_text(s_in),
             });
@@ -179,21 +254,29 @@ fn is_day(weekday_name: &str) -> bool {
 // }
 // Wird in der Zeile entweder durch "MSG" oder durch "REM"
 // eingeleitet
+// new: MSG, REM, or ","
 pub(crate) fn extract_description(line: &str) -> String {
+    match get_right_from(line, vec![" msg ", " rem ", ", "]) {
+        Some(s) => s,
+        None => NO_INFO.to_string(),
+    }
+}
+
+// If there's a splitter in the `line`, the text to the
+// right of the splitter is returned.
+// line = "2024 Nov 1 msg what?", splitter ["this", "that", "msg"] => Some(what?)
+fn get_right_from(line: &str, splitters: Vec<&str>) -> Option<String> {
     let small = line.to_lowercase();
-    let tmp = small.split_once(" msg ");
-    if let Some(msg) = tmp {
-        // return msg.1.to_string();
-        return line[msg.0.len() + 5..].to_string();
-    } else {
-        let tmp = small.split_once(" rem ");
-        if let Some(msg) = tmp {
-            // return msg.1.to_string();
-            return line[msg.0.len() + 5..].to_string();
-        } else {
-            return NO_INFO.to_string();
+    for splitter in splitters {
+        // println!("Looking for >{splitter}< in >{small}<");
+        if let Some(index) = small.find(splitter) {
+            return Some(
+                String::from_utf8(line.as_bytes()[index + splitter.len()..].to_vec()).unwrap(),
+            );
         }
     }
+
+    None
 }
 
 // textual representation of the date, i.e.
@@ -215,7 +298,6 @@ pub(crate) fn extract_stop_time(line: &str) -> Option<NaiveTime> {
     let small = line.to_lowercase();
     if let Some(start) = extract_start_time(&small) {
         let duration = between(&small, " duration ", " ");
-        // dbg!("Duration: {}", duration);
         if let Ok(f_duration) = duration.parse::<i64>() {
             if f_duration > 8 {
                 // werten wir als Minuten
@@ -271,7 +353,10 @@ pub(crate) fn extract_start_time(line: &str) -> Option<NaiveTime> {
 // }
 
 pub fn between<'a>(source: &'a str, start: &'a str, end: &'a str) -> &'a str {
-    let start_position = source.find(start);
+    let mut start_position = source.find(start);
+    // if start == "" {
+    //     start_position = Some(0);
+    // }
 
     if start_position.is_some() {
         let start_position = start_position.unwrap() + start.len();
@@ -500,5 +585,152 @@ mod test_parsing {
                 .appointment_description,
             "my birthday"
         );
+    }
+
+    #[test]
+    fn parsing_comprehensive6() {
+        let s_test = "Mon aT 10:00 DURATION 1 ß, my birthdayß";
+        // assert!(get_termin_without_year(&s_test).is_none());
+        assert_eq!(
+            get_termin_from_line(&s_test, None)
+                .unwrap()
+                .appointment_description,
+            "my birthdayß"
+        );
+    }
+
+    #[test]
+    fn parsing_comprehensive7() {
+        let s_test = "Mon aT 10:00-11:00 1 ß, my birthdayß";
+        // assert!(get_termin_without_year(&s_test).is_none());
+        let tmp = get_termin_from_line(&s_test, None).unwrap();
+        assert_eq!(tmp.appointment_description, "my birthdayß");
+        assert_eq!(
+            tmp.appointment_start,
+            NaiveTime::parse_from_str("10:00", "%H:%M").ok()
+        );
+        assert_eq!(
+            tmp.appointment_stop,
+            NaiveTime::parse_from_str("11:00", "%H:%M").ok()
+        );
+    }
+
+    #[test]
+    fn parsing_comprehensive8() {
+        let s_test = "Mon aT 10:00 - 11:00 1 ß, my birthdayß";
+        // assert!(get_termin_without_year(&s_test).is_none());
+        let tmp = get_termin_from_line(&s_test, None).unwrap();
+        assert_eq!(tmp.appointment_description, "my birthdayß");
+        assert_eq!(
+            tmp.appointment_stop,
+            NaiveTime::parse_from_str("11:00", "%H:%M").ok()
+        );
+    }
+
+    #[test]
+    fn parsing_comprehensive9() {
+        let s_test = "Mon aT 10:00-9:00 1 ß, my birthdayß";
+        // assert!(get_termin_without_year(&s_test).is_none());
+        let tmp = get_termin_from_line(&s_test, None).unwrap();
+        assert_eq!(tmp.appointment_description, "my birthdayß");
+        assert_eq!(
+            tmp.appointment_stop,
+            NaiveTime::parse_from_str("9:00", "%H:%M").ok()
+        );
+        assert_eq!(
+            tmp.appointment_start,
+            NaiveTime::parse_from_str("10:00", "%H:%M").ok()
+        );
+    }
+
+    #[test]
+    fn parsing_comprehensive10() {
+        let s_test = "Mon aT 10:00-9:00 1 ß, my birthdayß";
+        // assert!(get_termin_without_year(&s_test).is_none());
+        let tmp = get_termin_from_line(&s_test, None).unwrap();
+        assert_eq!(tmp.appointment_description, "my birthdayß");
+        assert_eq!(
+            tmp.appointment_stop,
+            NaiveTime::parse_from_str("9:00", "%H:%M").ok()
+        );
+        assert_eq!(
+            tmp.appointment_start,
+            NaiveTime::parse_from_str("10:00", "%H:%M").ok()
+        );
+    }
+
+    #[test]
+    fn parsing_comprehensive11() {
+        let s_test = "Mon aT 10:00 - 9:00 1 ß, my birthdayß";
+        // assert!(get_termin_without_year(&s_test).is_none());
+        let tmp = get_termin_from_line(&s_test, None).unwrap();
+        assert_eq!(tmp.appointment_description, "my birthdayß");
+        assert_eq!(
+            tmp.appointment_stop,
+            NaiveTime::parse_from_str("9:00", "%H:%M").ok()
+        );
+        assert_eq!(
+            tmp.appointment_start,
+            NaiveTime::parse_from_str("10:00", "%H:%M").ok()
+        );
+    }
+
+    #[test]
+    fn parsing_comprehensive12() {
+        let s_test = "Mon aT 1:00 - 9:00 1 ß, my birthdayß";
+        // assert!(get_termin_without_year(&s_test).is_none());
+        let tmp = get_termin_from_line(&s_test, None).unwrap();
+        assert_eq!(tmp.appointment_description, "my birthdayß");
+        assert_eq!(
+            tmp.appointment_stop,
+            NaiveTime::parse_from_str("9:00", "%H:%M").ok()
+        );
+        assert_eq!(
+            tmp.appointment_start,
+            NaiveTime::parse_from_str("1:00", "%H:%M").ok()
+        );
+    }
+
+    #[test]
+    fn parsing_comprehensive13() {
+        let s_test = "Mon aT 1:00-9:00 1 ß, my birthdayß";
+        // assert!(get_termin_without_year(&s_test).is_none());
+        let tmp = get_termin_from_line(&s_test, None).unwrap();
+        assert_eq!(tmp.appointment_description, "my birthdayß");
+        assert_eq!(
+            tmp.appointment_stop,
+            NaiveTime::parse_from_str("9:00", "%H:%M").ok()
+        );
+        assert_eq!(
+            tmp.appointment_start,
+            NaiveTime::parse_from_str("1:00", "%H:%M").ok()
+        );
+    }
+
+    #[test]
+    fn parsing_comprehensive14() {
+        let s_test = "2024 Nov 23 AT 10:30-12:30, Kammerorchester Börsensaal Hauptprobe";
+        // assert!(get_termin_without_year(&s_test).is_none());
+        let tmp = get_termin_from_line(&s_test, None).unwrap();
+        assert_eq!(
+            tmp.appointment_description,
+            "Kammerorchester Börsensaal Hauptprobe"
+        );
+        assert_eq!(
+            tmp.appointment_stop,
+            NaiveTime::parse_from_str("12:30", "%H:%M").ok()
+        );
+        assert_eq!(
+            tmp.appointment_start,
+            NaiveTime::parse_from_str("10:30", "%H:%M").ok()
+        );
+    }
+
+    #[test]
+    fn parsing_comprehensive15() {
+        let s_test = "Nov 24, Sonntag";
+        // assert!(get_termin_without_year(&s_test).is_none());
+        let tmp = get_termin_from_line(&s_test, None).unwrap();
+        assert_eq!(tmp.appointment_description, "Sonntag");
     }
 }

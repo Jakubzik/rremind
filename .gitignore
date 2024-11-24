@@ -5,3 +5,5 @@ build-0.0.3a.log
 build.sh
 clog
 build2_release.sh
+build1.sh
+build3_after_release.sh

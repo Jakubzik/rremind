@@ -259,17 +259,26 @@ fn archive_appointments(file_name: &DirEntry, contents: &str, archiv_folder: &st
         &binding.file_stem().unwrap().to_str().unwrap()
     );
 
-    // println!("Archivname: {}", archive_name);
-    // println!("... voll: {}{}", archiv_folder, archive_name);
+    println!(
+        "\nLooking for items to archive in {}...",
+        file_name.path().as_os_str().to_str().unwrap()
+    );
+    let mut b_found = false;
     for line in contents.lines() {
         match get_termin_from_line(&line, None) {
             Some(termin) => {
                 if termin.is_past() {
+                    println!(" - {line}");
+                    b_found = true;
                     archive_appointment(&line, &file_name, &archive_name);
                 }
             }
             _ => {}
         }
+    }
+
+    if !b_found {
+        println!(" - no items to archive");
     }
 }
 

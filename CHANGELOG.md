@@ -1,3 +1,11 @@
+# version 0.0.8
+
+- simplified date format of duration to 9:00-10:00; the previous syntax (9:00 DURATION 1) remains valid, though.
+
+- make `archive` say what it has archived.
+
+- allow "," instead of "MSG" or "REM" to introduce comments.
+
 # version 0.0.7
 
 - Bugfix (1): `rremind <DATE>` did not work with yearly dates.
@@ -44,12 +52,13 @@
 
 # Unreleased
 
+[ ] produce simple integration test
+[ ] add tag "#blocking" in order to later create a method to look for 'free' periods
 [ ] Make "archive" accept a parameter specifying how old the appointments need to be for archiving.
 [ ] Make archive configurable so that it collects all archives in *one* file.
-[ ] Make archive *report* what it's doing
+[ ] Make "when" work on archive
 [ ] "sort" command to sort the rem files chronologically.
 [ ] "put" command to add appointments.
-[ ] Accept date-range input: rremind 0..7 to show appointments of the next 7 days.
 [ ] Make date format more flexible.
 [ ] Add nicely formatted output (for terminal).
 [ ] Add .deb package.
@@ -61,3 +70,7 @@
 [x] Make path to .rem-folder mutable [v 0.0.4]
 [x] Bug: "When" fails to give the time of the appointment [v 0.0.4]
 [x] archive dates that are past [v 0.0.4]
+[x] Accept date-range input: rremind 0..7 to show appointments of the next 7 days. [v0.0.5]
+[x] Make archive *report* what it's doing [v0.0.8]
+[x] simplify format (2025 July 10, 13:15-14.15, do something) [v0.0.8]
+[x] allow a comma (",") to introduce comments. `MSG` and `REM` remain valid, though [v0.0.8]
