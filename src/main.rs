@@ -22,7 +22,7 @@ use std::{
 // If we're not on Linux, don't bother
 const EXIT_CODE_NO_HOME_DIR: i32 = 1;
 const ARCHIVE_THRESHOLD: usize = 1; // @todo make threshold configurable
-const VERSION: &str = "0.0.7";
+const VERSION: &str = "0.0.9";
 
 #[derive(Debug)]
 struct RRemindFolders {
@@ -134,8 +134,9 @@ fn main() {
         println!("- rremind <dtm>: lists appointments on date <dtm>; dtm is either iso or German format (either 2025-3-10 or 10.3.2025).");
         println!("- rremind <n..m>: lists appointments from n days relative to today to m days relative to today (rremind -1..2 lists appointments from yesterday to the day after tomorrow).");
         println!("- rremind when <term>: lists future appointments containing 'term'");
+        println!("- rremind check: report syntax errors in .rem-files.");
         println!("- rremind config: edit folders");
-        println!("- rremind archive: archive appointments in the past");
+        println!("- rremind archive: archive appointments that have a specific date in the past");
         return;
     }
 
@@ -147,7 +148,6 @@ fn main() {
     let mut accumulated_termine: Vec<Appointment> = vec![];
     let mut acc_errors: Vec<String> = vec![];
 
-    // @todo: expect msg should contain info on how to change the folder settings.
     let directory_with_remind_files =
         fs::read_dir(&s_rremind_folder.dir_rem_files).expect(&format!(
             "Cannot find folder >{}<, which is supposedly containing the reminder files. Try `rremind config`?",
@@ -164,21 +164,14 @@ fn main() {
                         &termine_aus_datei,
                         &s_rremind_folder.dir_rem_archive,
                     ),
-                    // Command::ListAppointmentsByDate => accumulate_termine(
-                    //     requested_date,
-                    //     &termine_aus_datei,
-                    //     &mut accumulated_termine,
-                    // ),
                     Command::ListAppointments => accumulate_termine(
                         requested_date_start,
                         &termine_aus_datei,
                         &mut accumulated_termine,
                     ),
-                    //@todo Oct 29, 2024: needs to iterate through the dates
                     Command::MultiListAppointments => {
                         let mut iter_date = requested_date_start;
                         while iter_date <= requested_date_stop {
-                            // print!("Iterating");
                             accumulate_termine(
                                 iter_date,
                                 &termine_aus_datei,
@@ -242,17 +235,13 @@ fn main() {
     }
 }
 
-//
 fn archive_appointments(file_name: &DirEntry, contents: &str, archiv_folder: &str) {
-    // - convert file_name to archive-Filename
-    // - loop through lines of file to see
-    //   if entries are past and copy then
     std::fs::create_dir_all(&archiv_folder).expect(&format!(
         "Cannot create archive directory `{archiv_folder}`"
     ));
+
     let binding = file_name.path();
-    // let archive_name =
-    // archive_name = format!("{}.done", &archive_name[..archive_name.len() - 4]);
+
     let archive_name = format!(
         "{}{}.done",
         &archiv_folder,
@@ -263,6 +252,7 @@ fn archive_appointments(file_name: &DirEntry, contents: &str, archiv_folder: &st
         "\nLooking for items to archive in {}...",
         file_name.path().as_os_str().to_str().unwrap()
     );
+
     let mut b_found = false;
     for line in contents.lines() {
         match get_termin_from_line(&line, None) {
@@ -273,7 +263,7 @@ fn archive_appointments(file_name: &DirEntry, contents: &str, archiv_folder: &st
                     archive_appointment(&line, &file_name, &archive_name);
                 }
             }
-            _ => {}
+            _ => {} // No interpretable line -> no action
         }
     }
 
@@ -445,8 +435,6 @@ fn add_or_subtract_days(datum: &mut NaiveDate, days: i64) {
     }
 }
 
-///
-/// @todo Allow input of range
 fn read_user_input(
     args: Vec<String>,
     datum_start: &mut NaiveDate,
@@ -459,7 +447,6 @@ fn read_user_input(
             if let (Ok(days_start), Ok(days_stop)) =
                 (from_to.0.parse::<i64>(), from_to.1.parse::<i64>())
             {
-                // println!("Anfang: {days_start}, Ende {days_stop}");
                 add_or_subtract_days(datum_start, days_start);
                 add_or_subtract_days(datum_stop, days_stop);
                 return Command::MultiListAppointments;

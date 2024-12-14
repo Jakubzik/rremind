@@ -62,7 +62,7 @@ pub fn get_termin_from_line(s_text: &str, start_date: Option<NaiveDate>) -> Opti
     None
 }
 
-// 2024 sep 9 AT 10:00 DURATION 1 MSG Velmeke mal wegen des Fortschritts an seiner Hausarbeit fragen
+// 2024 sep 9 AT 10:00 DURATION 1 MSG Whatever
 pub(crate) fn get_termin_from_full_date(s_in: &str) -> Option<Appointment> {
     let words: Vec<&str> = s_in.split_whitespace().collect();
     // if let Ok(year) = words.get(0)?.parse::<i32>() {
@@ -353,7 +353,7 @@ pub(crate) fn extract_start_time(line: &str) -> Option<NaiveTime> {
 // }
 
 pub fn between<'a>(source: &'a str, start: &'a str, end: &'a str) -> &'a str {
-    let mut start_position = source.find(start);
+    let start_position = source.find(start);
     // if start == "" {
     //     start_position = Some(0);
     // }
@@ -378,7 +378,7 @@ mod test_parsing {
     use crate::{
         parser::{
             get_month_as_no, get_termin_from_full_date, get_termin_from_line,
-            get_termin_without_month, get_termin_without_year, is_date, is_day, is_month,
+            get_termin_without_month, get_termin_without_year, is_date, is_month,
         },
         Appointment,
     };

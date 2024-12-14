@@ -1,3 +1,9 @@
+# version 0.0.9
+
+- parametrized version in code (so that `rremind version` shows the *correct* version :-), 
+
+- corrected layout glitches in manpage
+
 # version 0.0.8
 
 - simplified date format of duration to 9:00-10:00; the previous syntax (9:00 DURATION 1) remains valid, though.
@@ -48,10 +54,9 @@
 
 - Created "remind" clone in Rust for fun and because "Unrecognized command; interpreting as REM" flooded my terminal
 
-- Created "remind" clone in Rust for fun and because "Unrecognized command; interpreting as REM" flooded my terminal
-
 # Unreleased
 
+[ ] look at <https://markwhen.com/> and compatibility
 [ ] produce simple integration test
 [ ] add tag "#blocking" in order to later create a method to look for 'free' periods
 [ ] Make "archive" accept a parameter specifying how old the appointments need to be for archiving.
@@ -74,3 +79,5 @@
 [x] Make archive *report* what it's doing [v0.0.8]
 [x] simplify format (2025 July 10, 13:15-14.15, do something) [v0.0.8]
 [x] allow a comma (",") to introduce comments. `MSG` and `REM` remain valid, though [v0.0.8]
+[x] repair example format on manpage [v0.0.9]
+[x] repair erroneous display of `version` [v0.0.9]

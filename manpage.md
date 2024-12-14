@@ -2,8 +2,8 @@
 title: RREMIND
 section: 1
 header: User Manual
-footer: rremind 0.0.8
-date: November 24, 2024
+footer: rremind 0.0.9
+date: Dezember 14, 2024
 ---
 # NAME
 
@@ -36,7 +36,7 @@ With the parameter `when` plus a search string, rremind will list the appointmen
 **date**,
 : list appointments on the given date. Date format is ISO (2025-4-25) or German (25.4.2024).
 
-**when <searchterm>**,
+**when [searchterm]**,
 : list future appointments containing the search-term.
 
 **help**,
@@ -54,13 +54,13 @@ With the parameter `when` plus a search string, rremind will list the appointmen
 # SYNTAX OF REM-FILE ENTRIES
 
 **yearly dates**
-: <Month> <DAY> [AT optional time], INFO; for example: `Nov 24, John's birthday`, or `Nov 24 REM John's birthday`, or `Nov 24 at 22:00, John's birthday party`
+: [Month] [DAY] [AT optional time], INFO; for example: `Nov 24, John's birthday`, or `Nov 24 REM John's birthday`, or `Nov 24 at 22:00, John's birthday party`
 
 **weekly dates**
-: <Day> [AT optional time], INFO; for example `Mon at 10:00, dancing lessons`;
+: [Day] [AT optional time], INFO; for example `Mon at 18:00, dancing lesson`;
 
 **specific dates**
-: <Year> <Month> <DAY> [AT optional time], INFO.
+: [Year] [Month] [DAY] [AT optional time], INFO; for example 2024 dec 24, Christmas.
 
 # EXAMPLES
 
