@@ -1,4 +1,4 @@
-mod parser;
+ mod parser;
 
 use chrono::{Datelike, Utc};
 pub(crate) use chrono::{Days, NaiveDate};
