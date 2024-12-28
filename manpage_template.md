@@ -37,7 +37,10 @@ With the parameter `when` plus a search string, rremind will list the appointmen
 : list appointments on the given date. Date format is ISO (2025-4-25) or German (25.4.2024).
 
 **when [searchterm]**,
-: list future appointments containing the search-term.
+: list future appointments containing the search-term. Only appointments with a specific date are retrieved.
+
+**when_was [searchterm]**,
+: list past appointments containing the search-term (by looking through the archive). Only appointments with specific dates are retrieved.
 
 **help**,
 : show brief help message

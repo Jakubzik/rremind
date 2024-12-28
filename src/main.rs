@@ -84,6 +84,7 @@ enum Command {
     ListAppointments,
     MultiListAppointments, // of a range of days
     SearchAppointments,
+    SearchArchive, // new in 0.0.10
     Check,
     EditConfig,
     Archive,
@@ -134,6 +135,7 @@ fn main() {
         println!("- rremind <dtm>: lists appointments on date <dtm>; dtm is either iso or German format (either 2025-3-10 or 10.3.2025).");
         println!("- rremind <n..m>: lists appointments from n days relative to today to m days relative to today (rremind -1..2 lists appointments from yesterday to the day after tomorrow).");
         println!("- rremind when <term>: lists future appointments containing 'term'");
+        println!("- rremind when_was <term>: lists appointments containing 'term' in *archived* files");
         println!("- rremind check: report syntax errors in .rem-files.");
         println!("- rremind config: edit folders");
         println!("- rremind archive: archive appointments that have a specific date in the past");
@@ -148,15 +150,23 @@ fn main() {
     let mut accumulated_termine: Vec<Appointment> = vec![];
     let mut acc_errors: Vec<String> = vec![];
 
-    let directory_with_remind_files =
-        fs::read_dir(&s_rremind_folder.dir_rem_files).expect(&format!(
+    let directory_with_remind_files = match cmd == Command::SearchArchive{
+        false => fs::read_dir(&s_rremind_folder.dir_rem_files).expect(&format!(
             "Cannot find folder >{}<, which is supposedly containing the reminder files. Try `rremind config`?",
             s_rremind_folder.dir_rem_files
-        ));
+            )),
+        true => {
+            fs::read_dir(&s_rremind_folder.dir_rem_archive).expect(&format!(
+                "Cannot find folder >{}<, which is supposedly containing the reminder archive. Try `rremind config`?",
+                s_rremind_folder.dir_rem_archive))
+            }
+                
+        };
 
     for path in directory_with_remind_files {
         if let Ok(datei) = path {
-            if datei.path().to_str().unwrap().ends_with(&".rem") {
+            let as_str = datei.path().to_str().unwrap().to_owned();
+            if as_str.ends_with(&".rem") || (cmd == Command::SearchArchive && as_str.ends_with("done")) {
                 let termine_aus_datei = std::fs::read_to_string(datei.path()).unwrap();
                 match cmd {
                     Command::Archive => archive_appointments(
@@ -180,7 +190,7 @@ fn main() {
                             add_or_subtract_days(&mut iter_date, 1);
                         }
                     }
-                    Command::SearchAppointments => accumulate_termine_by_search(
+                    Command::SearchAppointments | Command::SearchArchive => accumulate_termine_by_search(
                         &search_term,
                         &termine_aus_datei,
                         &mut accumulated_termine,
@@ -464,6 +474,12 @@ fn read_user_input(
                         "If you're calling 'when', you need a second parameter. `rremind when dentist`",
                     ).to_string();
                     return Command::SearchAppointments;
+                }
+                if args.get(1).unwrap() == "when_was" {
+                    *search = args.get(2).expect(
+                        "If you're calling 'when_was', you need a second parameter. `rremind when_was Christmas`",
+                    ).to_string();
+                    return Command::SearchArchive;
                 }
             }
         }

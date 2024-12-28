@@ -49,7 +49,11 @@ Arguments:\
 
     A range of two integers (e.g. -1..2) to list all appointments between yesterday and the day of tomorrow (inclusive)
 
+    A date in ISO or German date format; 
+
     'when' followed by a search term;
+
+    'when_was' followed by a search term (to look through the archive);
 
     'check' to check if all .rem-filed can be interpreted
 

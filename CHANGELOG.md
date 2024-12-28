@@ -1,3 +1,7 @@
+# version 0.0.10
+
+- new option "when_was" to search the archive for a keyword
+
 # version 0.0.9
 
 - parametrized version in code (so that `rremind version` shows the *correct* version :-), 
@@ -61,7 +65,7 @@
 [ ] add tag "#blocking" in order to later create a method to look for 'free' periods
 [ ] Make "archive" accept a parameter specifying how old the appointments need to be for archiving.
 [ ] Make archive configurable so that it collects all archives in *one* file.
-[ ] Make "when" work on archive
+[ ] Make "when" and "when_was" accept word lists (with and/or?)
 [ ] "sort" command to sort the rem files chronologically.
 [ ] "put" command to add appointments.
 [ ] Make date format more flexible.
@@ -81,3 +85,4 @@
 [x] allow a comma (",") to introduce comments. `MSG` and `REM` remain valid, though [v0.0.8]
 [x] repair example format on manpage [v0.0.9]
 [x] repair erroneous display of `version` [v0.0.9]
+[x] Make "when" work on archive [v0.0.10]
