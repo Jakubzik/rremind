@@ -1,3 +1,7 @@
+# version 0.0.11
+
+- Bugfix missing time indication in some cases
+
 # version 0.0.10
 
 - new option "when_was" to search the archive for a keyword
@@ -60,7 +64,10 @@
 
 # Unreleased
 
+[ ] BUG: entry "2025 feb 26 at 13.00 DURATION 1 MSG Whatever" does not show the time
 [ ] look at <https://markwhen.com/> and compatibility
+[ ] get rid of the necessity to add "at" before time indication.
+[ ] make configurable templates for list of appointments (i.e. $date $from $to $subject $file)
 [ ] produce simple integration test
 [ ] add tag "#blocking" in order to later create a method to look for 'free' periods
 [ ] Make "archive" accept a parameter specifying how old the appointments need to be for archiving.
