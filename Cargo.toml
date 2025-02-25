@@ -1,7 +1,7 @@
 [package]
 name = "rremind"
-version = "0.0.10"
-edition = "2021"
+version = "0.0.11"
+edition = "2024"
 description = "A simple reminder service inspired by Diane Skoll's 'remind'"
 categories = ["command-line-utilities"]
 keywords = ["cli", "calendar", "remind"]

@@ -2,8 +2,8 @@
 title: RREMIND
 section: 1
 header: User Manual
-footer: rremind 0.0.10
-date: Dezember 28, 2024
+footer: rremind 0.0.11
+date: Februar 25, 2025
 ---
 # NAME
 
@@ -64,6 +64,9 @@ With the parameter `when` plus a search string, rremind will list the appointmen
 
 **specific dates**
 : [Year] [Month] [DAY] [AT optional time], INFO; for example 2024 dec 24, Christmas.
+
+**time indication**
+: The syntax for time notation is 24-hour format rather than am/pm, e.g. 16:15. Hour and minutes can be separated either with a colon (16:15) or with a period (16.15).
 
 # EXAMPLES
 

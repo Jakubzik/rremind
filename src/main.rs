@@ -1,4 +1,4 @@
- mod parser;
+mod parser;
 
 use chrono::{Datelike, Utc};
 pub(crate) use chrono::{Days, NaiveDate};
@@ -22,7 +22,7 @@ use std::{
 // If we're not on Linux, don't bother
 const EXIT_CODE_NO_HOME_DIR: i32 = 1;
 const ARCHIVE_THRESHOLD: usize = 1; // @todo make threshold configurable
-const VERSION: &str = "0.0.9";
+const VERSION: &str = "0.0.11";
 
 #[derive(Debug)]
 struct RRemindFolders {
@@ -132,10 +132,16 @@ fn main() {
             "- rremind check: looks for lines in your rremind files that cannot be interpreted."
         );
         println!("- rremind <n>: lists appointments n days from (or to) today.");
-        println!("- rremind <dtm>: lists appointments on date <dtm>; dtm is either iso or German format (either 2025-3-10 or 10.3.2025).");
-        println!("- rremind <n..m>: lists appointments from n days relative to today to m days relative to today (rremind -1..2 lists appointments from yesterday to the day after tomorrow).");
+        println!(
+            "- rremind <dtm>: lists appointments on date <dtm>; dtm is either iso or German format (either 2025-3-10 or 10.3.2025)."
+        );
+        println!(
+            "- rremind <n..m>: lists appointments from n days relative to today to m days relative to today (rremind -1..2 lists appointments from yesterday to the day after tomorrow)."
+        );
         println!("- rremind when <term>: lists future appointments containing 'term'");
-        println!("- rremind when_was <term>: lists appointments containing 'term' in *archived* files");
+        println!(
+            "- rremind when_was <term>: lists appointments containing 'term' in *archived* files"
+        );
         println!("- rremind check: report syntax errors in .rem-files.");
         println!("- rremind config: edit folders");
         println!("- rremind archive: archive appointments that have a specific date in the past");
@@ -160,13 +166,14 @@ fn main() {
                 "Cannot find folder >{}<, which is supposedly containing the reminder archive. Try `rremind config`?",
                 s_rremind_folder.dir_rem_archive))
             }
-                
         };
 
     for path in directory_with_remind_files {
         if let Ok(datei) = path {
             let as_str = datei.path().to_str().unwrap().to_owned();
-            if as_str.ends_with(&".rem") || (cmd == Command::SearchArchive && as_str.ends_with("done")) {
+            if as_str.ends_with(&".rem")
+                || (cmd == Command::SearchArchive && as_str.ends_with("done"))
+            {
                 let termine_aus_datei = std::fs::read_to_string(datei.path()).unwrap();
                 match cmd {
                     Command::Archive => archive_appointments(
@@ -190,11 +197,13 @@ fn main() {
                             add_or_subtract_days(&mut iter_date, 1);
                         }
                     }
-                    Command::SearchAppointments | Command::SearchArchive => accumulate_termine_by_search(
-                        &search_term,
-                        &termine_aus_datei,
-                        &mut accumulated_termine,
-                    ),
+                    Command::SearchAppointments | Command::SearchArchive => {
+                        accumulate_termine_by_search(
+                            &search_term,
+                            &termine_aus_datei,
+                            &mut accumulated_termine,
+                        )
+                    }
                     Command::Check => accumulate_syntax_errors(
                         datei.path().to_str().unwrap(),
                         &termine_aus_datei,

@@ -65,7 +65,6 @@ pub fn get_termin_from_line(s_text: &str, start_date: Option<NaiveDate>) -> Opti
 // 2024 sep 9 AT 10:00 DURATION 1 MSG Whatever
 pub(crate) fn get_termin_from_full_date(s_in: &str) -> Option<Appointment> {
     let words: Vec<&str> = s_in.split_whitespace().collect();
-    // if let Ok(year) = words.get(0)?.parse::<i32>() {
     if let Ok(year) = words.get(0)?.parse::<i32>() {
         let month = get_month_as_no(words.get(1)?)?;
         if let Ok(day) = words.get(2)?.parse::<usize>() {
@@ -111,7 +110,8 @@ fn extract_duration(s_in: &str) -> TimeHelper {
         if s_i.contains("-") {
             let times = s_i.split_once("-").unwrap();
             return TimeHelper {
-                start: NaiveTime::parse_from_str(times.0.trim(), "%H:%M").ok(),
+                start: NaiveTime::parse_from_str(times.0.trim(), &get_time_parser(times.0.trim()))
+                    .ok(),
                 stop: get_stop(times.1.trim()),
             };
         }
@@ -124,14 +124,31 @@ fn extract_duration(s_in: &str) -> TimeHelper {
     };
 }
 
+// Helper to determine if we're dealing
+// with "10.15" or "10:15" (both are ok)
+fn get_time_parser(s_in: &str) -> String {
+    match s_in.contains(":") {
+        true => "%H:%M".to_string(),
+        _ => "%H.%M".to_string(),
+    }
+}
+
 // The end time could end like this: "-8:00 M", or "-8:00, get up"
 // .get_stop will trim these to "8:00"
 // Input (`excerpt`) must already be trimmed
 fn get_stop(excerpt: &str) -> Option<NaiveTime> {
     match excerpt.contains(" ") {
-        true => NaiveTime::parse_from_str(between(excerpt, "", " "), "%H:%M").ok(),
+        true => {
+            let candidate = between(excerpt, "", " ");
+            let parser = get_time_parser(candidate);
+            NaiveTime::parse_from_str(candidate, &parser).ok()
+        }
         _ => match excerpt.contains(",") {
-            true => NaiveTime::parse_from_str(between(excerpt, "", ","), "%H:%M").ok(),
+            true => {
+                let candidate = between(excerpt, "", ",");
+                let parser = get_time_parser(candidate);
+                NaiveTime::parse_from_str(candidate, &parser).ok()
+            }
             _ => NaiveTime::parse_from_str(excerpt, "%H:%M").ok(),
         },
     }
@@ -373,14 +390,14 @@ mod test_parsing {
 
     use std::str::FromStr;
 
-    use chrono::{offset, Datelike, NaiveDate, NaiveTime};
+    use chrono::{Datelike, NaiveDate, NaiveTime, offset};
 
     use crate::{
+        Appointment,
         parser::{
             get_month_as_no, get_termin_from_full_date, get_termin_from_line,
             get_termin_without_month, get_termin_without_year, is_date, is_month,
         },
-        Appointment,
     };
 
     // use super::NO_INFO;
@@ -488,10 +505,12 @@ mod test_parsing {
                 .to_string(),
             "Wed".to_string()
         );
-        assert!(get_termin_without_month(&s_test, None)
-            .unwrap()
-            .appointment_start
-            .is_some());
+        assert!(
+            get_termin_without_month(&s_test, None)
+                .unwrap()
+                .appointment_start
+                .is_some()
+        );
 
         assert_eq!(
             get_termin_without_month(&s_test, None)
@@ -501,10 +520,12 @@ mod test_parsing {
             NaiveTime::from_str("10:00").unwrap()
         );
 
-        assert!(get_termin_without_month(&s_test, None)
-            .unwrap()
-            .appointment_stop
-            .is_none());
+        assert!(
+            get_termin_without_month(&s_test, None)
+                .unwrap()
+                .appointment_stop
+                .is_none()
+        );
     }
 
     #[test]
@@ -519,6 +540,13 @@ mod test_parsing {
                 .unwrap()
                 .month0(),
             10
+        );
+        assert_eq!(
+            get_termin_from_full_date(&s_test)
+                .unwrap()
+                .appointment_start
+                .unwrap(),
+            NaiveTime::from_hms_opt(10, 0, 0).unwrap()
         );
     }
 
@@ -693,7 +721,7 @@ mod test_parsing {
 
     #[test]
     fn parsing_comprehensive13() {
-        let s_test = "Mon aT 1:00-9:00 1 ß, my birthdayß";
+        let s_test = "Mon aT 1:00-9.00 1 ß, my birthdayß";
         // assert!(get_termin_without_year(&s_test).is_none());
         let tmp = get_termin_from_line(&s_test, None).unwrap();
         assert_eq!(tmp.appointment_description, "my birthdayß");
@@ -709,7 +737,7 @@ mod test_parsing {
 
     #[test]
     fn parsing_comprehensive14() {
-        let s_test = "2024 Nov 23 AT 10:30-12:30, Kammerorchester Börsensaal Hauptprobe";
+        let s_test = "2024 Nov 23 AT 10.30-12:30, Kammerorchester Börsensaal Hauptprobe";
         // assert!(get_termin_without_year(&s_test).is_none());
         let tmp = get_termin_from_line(&s_test, None).unwrap();
         assert_eq!(

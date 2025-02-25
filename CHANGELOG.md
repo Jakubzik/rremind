@@ -1,6 +1,8 @@
 # version 0.0.11
 
-- Bugfix missing time indication in some cases
+- Bugfix missing time indication in some cases (cause: 10.00 rather than 10:00)
+
+- Rust version 2021->2024
 
 # version 0.0.10
 
@@ -64,7 +66,6 @@
 
 # Unreleased
 
-[ ] BUG: entry "2025 feb 26 at 13.00 DURATION 1 MSG Whatever" does not show the time
 [ ] look at <https://markwhen.com/> and compatibility
 [ ] get rid of the necessity to add "at" before time indication.
 [ ] make configurable templates for list of appointments (i.e. $date $from $to $subject $file)
@@ -93,3 +94,4 @@
 [x] repair example format on manpage [v0.0.9]
 [x] repair erroneous display of `version` [v0.0.9]
 [x] Make "when" work on archive [v0.0.10]
+[x] BUG: entry "2025 feb 26 at 13.00 DURATION 1 MSG Whatever" does not show the time [v 0.0.11]

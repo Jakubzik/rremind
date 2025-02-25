@@ -12,7 +12,6 @@ These files can contain **weekly dates**...
 
 ``Mon AT 17:00-18:00, Jour Fix with John Dee``.
 
-
 ... or **yearly dates** ...
 
 ``jan 1 AT 11:00 DURATION 3 MSG Clean up after new year's party``, or
@@ -25,7 +24,9 @@ These files can contain **weekly dates**...
 
 ``2025 May 17 AT 10:00 DURATION 20 REM Give Annika her birthday present``
 
-(Duration can be hours or minutes; values > 8 are interpreted as minutes; time is optional)
+``2025 May 17 AT 10.00-10.20, Give Annika her birthday present``
+
+(``Duration`` can be hours or minutes; values > 8 are interpreted as minutes; time is optional and always in 24-hr format, both ":" and "." work as separators of hours and minutes, e.g. ``16.20`` and ``16:20`` are both read as four twenty pm).
 
 ``rremind`` will ask for the location of your .rem-files on the first run -- or the location can be altered later using ``rremind config``.
 
