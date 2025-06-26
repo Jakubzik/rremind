@@ -1,3 +1,11 @@
+# version 0.0.13
+
+Bugfix: "2025 jun 26 at 11.00 DURATION 1,5 MSG Lehraufträge an Klaus" fails to show the time. "11.00" (rather than "11:00") was not recognized, nor did "DURATION" take floats as argument. 
+
+# version 0.0.12
+
+- Upgrading libs
+
 # version 0.0.11
 
 - Bugfix missing time indication in some cases (cause: 10.00 rather than 10:00)
@@ -66,6 +74,11 @@
 
 # Unreleased
 
+[ ] Make it possible to add color-codes to files. E.g. private.rem starting with "#rem: #rr0000". Private and Professional appointments can then be kept apart
+[ ] Create visual statistics on the number of appointments.
+[ ] Add more examples of REM-FILE entries to manpage
+[ ] Make deb package
+[ ] archive should be able to remove empty files
 [ ] look at <https://markwhen.com/> and compatibility
 [ ] get rid of the necessity to add "at" before time indication.
 [ ] make configurable templates for list of appointments (i.e. $date $from $to $subject $file)

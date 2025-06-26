@@ -10,6 +10,8 @@ These files can contain **weekly dates**...
 
 ``Mon AT 17:00 DURATION 1 MSG Jour Fix with John Dee``, or
 
+``Tue at 11.00 DURATION 1.5 MSG breakfast``, or
+
 ``Mon AT 17:00-18:00, Jour Fix with John Dee``.
 
 ... or **yearly dates** ...

@@ -2,8 +2,8 @@
 title: RREMIND
 section: 1
 header: User Manual
-footer: rremind 0.0.11
-date: Februar 25, 2025
+footer: rremind 0.0.13
+date: Juni 26, 2025
 ---
 # NAME
 

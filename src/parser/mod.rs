@@ -314,8 +314,17 @@ pub(crate) fn extract_datum_text(line: &str) -> String {
 pub(crate) fn extract_stop_time(line: &str) -> Option<NaiveTime> {
     let small = line.to_lowercase();
     if let Some(start) = extract_start_time(&small) {
-        let duration = between(&small, " duration ", " ");
-        if let Ok(f_duration) = duration.parse::<i64>() {
+        let mut duration = between(&small, " duration ", " ").replace(",", "."); // decimal point Engl.
+
+        // If duration is 1.5 (for 1.5 hours),
+        // we'll try to convert this to minutes here:
+        if duration.contains(".") {
+            let f = duration.parse::<f64>().unwrap_or(0.0);
+            let i: i64 = (f * 60.0).round() as i64;
+            duration = format!("{i}");
+        }
+
+        if let Ok(f_duration) = (duration.replace(",", ".")).parse::<i64>() {
             if f_duration > 8 {
                 // werten wir als Minuten
                 let (r, _) =
@@ -341,7 +350,10 @@ pub(crate) fn extract_start_time(line: &str) -> Option<NaiveTime> {
     let s = between(&small, " at ", " ");
     match NaiveTime::parse_from_str(s, "%H:%M") {
         Ok(r) => Some(r),
-        _ => None,
+        _ => match NaiveTime::parse_from_str(s, "%H.%M") {
+            Ok(r2) => Some(r2),
+            _ => None,
+        },
     }
     // None
     // todo!()
