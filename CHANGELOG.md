@@ -1,3 +1,7 @@
+# version 0.0.14
+
+Upgrading libs
+
 # version 0.0.13
 
 Bugfix: "2025 jun 26 at 11.00 DURATION 1,5 MSG Lehraufträge an Klaus" fails to show the time. "11.00" (rather than "11:00") was not recognized, nor did "DURATION" take floats as argument. 

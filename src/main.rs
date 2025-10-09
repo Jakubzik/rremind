@@ -22,7 +22,7 @@ use std::{
 // If we're not on Linux, don't bother
 const EXIT_CODE_NO_HOME_DIR: i32 = 1;
 const ARCHIVE_THRESHOLD: usize = 1; // @todo make threshold configurable
-const VERSION: &str = "0.0.13";
+const VERSION: &str = "0.0.14";
 
 #[derive(Debug)]
 struct RRemindFolders {
