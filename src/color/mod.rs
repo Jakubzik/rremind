@@ -1,0 +1,17 @@
+pub const COLOR_BLACK: &str = "\x1B[30m";
+pub const COLOR_RED: &str = "\x1B[31m";
+pub const COLOR_GREEN: &str = "\x1B[32m";
+pub const COLOR_YELLOW: &str = "\x1B[33m";
+pub const COLOR_BLUE: &str = "\x1B[34m";
+pub const COLOR_MAGENTA: &str = "\x1B[35m";
+pub const COLOR_CYAN: &str = "\x1B[36m";
+pub const COLOR_WHITE: &str = "\x1B[37m";
+pub const COLOR_BRIGHT_BLACK: &str = "\x1B[90m";
+pub const COLOR_BRIGHT_RED: &str = "\x1B[91m";
+pub const COLOR_BRIGHT_GREEN: &str = "\x1B[92m";
+pub const COLOR_BRIGHT_YELLOW: &str = "\x1B[93m";
+pub const COLOR_BRIGHT_BLUE: &str = "\x1B[94m";
+pub const COLOR_BRIGHT_MAGENTA: &str = "\x1B[95m";
+pub const COLOR_BRIGHT_CYAN: &str = "\x1B[96m";
+pub const COLOR_BRIGHT_WHITE: &str = "\x1B[97m";
+pub const COLOR_RESET: &str = "\x1B[39m";

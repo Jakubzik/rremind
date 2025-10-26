@@ -75,7 +75,7 @@ Arguments:\
 Next steps:
 
 [ ] Make appointments "taggable" and filter listings by tag and by file.\
-    [ ] Color code appointments/tags/files\
+    [x] Color code appointments/tags/files\ [v 0.0.15]
     [ ] Special tag `nonblocking` meaning that appointments can still go in that slot\
     [ ] `rremind free 2 hours` to make rremind suggest appointments that take two house\
     [ ] Invent mechanism to manage doodles and the likes (i.e. block dates and unblock when date is fixed).

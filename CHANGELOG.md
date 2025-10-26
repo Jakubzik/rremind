@@ -1,3 +1,7 @@
+# version 0.0.15
+
+Adding some color. (Rremind files can now start with a line like `# color=red` so that all appointments in this file are displayed in red. Possible colors are currently red, yellow, blue, cyan, and green).
+
 # version 0.0.14
 
 Upgrading libs
@@ -78,10 +82,10 @@ Bugfix: "2025 jun 26 at 11.00 DURATION 1,5 MSG Lehraufträge an Klaus" fails to 
 
 # Unreleased
 
-[ ] Make it possible to add color-codes to files. E.g. private.rem starting with "#rem: #rr0000". Private and Professional appointments can then be kept apart
 [ ] Create visual statistics on the number of appointments.
 [ ] Add more examples of REM-FILE entries to manpage
 [ ] Make deb package
+[ ] Make 'colorinfo' hand out color configurations (which file has which color-coding)
 [ ] archive should be able to remove empty files
 [ ] look at <https://markwhen.com/> and compatibility
 [ ] get rid of the necessity to add "at" before time indication.
@@ -99,6 +103,7 @@ Bugfix: "2025 jun 26 at 11.00 DURATION 1,5 MSG Lehraufträge an Klaus" fails to 
 
 # History
 
+[x] Make it possible to add color-codes to files. E.g. private.rem starting with "# color=red". Private and Professional appointments can then be kept apart [v 0.0.15]
 [x] List appointments of specific date [v 0.0.6]
 [x] Implement "version" command. [v 0.0.5]
 [x] Make path to .rem-folder mutable [v 0.0.4]

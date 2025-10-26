@@ -6,7 +6,7 @@
 
 use chrono::{Datelike, Days, NaiveDate, NaiveTime, TimeDelta};
 
-use crate::Appointment;
+use crate::{Appointment, color::COLOR_BLUE};
 
 // Start_Time and Stop_Time: 10:00 DURATION 20 is possible, make
 // 10:00-10:20 possible, too
@@ -81,6 +81,7 @@ pub(crate) fn get_termin_from_full_date(s_in: &str) -> Option<Appointment> {
                 appointment_stop: t.stop,
                 appointment_description: extract_description(s_in),
                 appointment_date_alt_text: extract_datum_text(s_in),
+                appointment_color: Some(COLOR_BLUE.to_owned()),
             });
         }
     }
@@ -181,6 +182,7 @@ pub(crate) fn get_termin_without_year(
                 appointment_stop: t.stop,
                 appointment_description: extract_description(s_in),
                 appointment_date_alt_text: extract_datum_text(s_in),
+                appointment_color: Some(COLOR_BLUE.to_owned()),
             });
         }
     }
@@ -218,6 +220,7 @@ pub(crate) fn get_termin_without_month(
                 appointment_stop: t.stop,
                 appointment_description: extract_description(s_in),
                 appointment_date_alt_text: extract_datum_text(s_in),
+                appointment_color: None,
             });
         }
     }
@@ -423,6 +426,7 @@ mod test_parsing {
             appointment_stop: None,
             appointment_description: "birthday".to_string(), //NO_INFO.to_string(),
             appointment_date_alt_text: "".to_string(),
+            appointment_color: None,
         }
     }
 

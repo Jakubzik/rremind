@@ -1,7 +1,9 @@
+mod color;
 mod parser;
 
 use chrono::{Datelike, Utc};
 pub(crate) use chrono::{Days, NaiveDate};
+use color::*;
 use parser::{as_date, between, get_termin_from_line, is_date};
 use std::{
     env::{self},
@@ -52,6 +54,7 @@ struct Appointment {
     appointment_stop: Option<chrono::NaiveTime>,
     appointment_description: String,
     appointment_date_alt_text: String,
+    appointment_color: Option<String>, // new in 0.15, color is defined on top of file, e.g. #color=red
 }
 
 impl Appointment {
@@ -168,6 +171,18 @@ fn main() {
             }
         };
 
+    fn get_color(s_in: &str) -> Option<String> {
+        let candidate = &s_in[s_in.find("=").unwrap_or_default() + 1..].to_lowercase()[..];
+        match candidate {
+            "red" => Some(COLOR_BRIGHT_RED.to_owned()),
+            "yellow" => Some(COLOR_YELLOW.to_owned()),
+            "blue" => Some(COLOR_BLUE.to_owned()),
+            "cyan" => Some(COLOR_BRIGHT_CYAN.to_owned()),
+            "green" => Some(COLOR_GREEN.to_owned()),
+            _ => None,
+        }
+    }
+
     for path in directory_with_remind_files {
         if let Ok(datei) = path {
             let as_str = datei.path().to_str().unwrap().to_owned();
@@ -175,6 +190,11 @@ fn main() {
                 || (cmd == Command::SearchArchive && as_str.ends_with("done"))
             {
                 let termine_aus_datei = std::fs::read_to_string(datei.path()).unwrap();
+                let color = match termine_aus_datei.starts_with("# color=") {
+                    true => get_color(termine_aus_datei.lines().rev().last().unwrap()),
+                    false => None,
+                };
+
                 match cmd {
                     Command::Archive => archive_appointments(
                         &datei,
@@ -184,6 +204,7 @@ fn main() {
                     Command::ListAppointments => accumulate_termine(
                         requested_date_start,
                         &termine_aus_datei,
+                        color,
                         &mut accumulated_termine,
                     ),
                     Command::MultiListAppointments => {
@@ -192,6 +213,7 @@ fn main() {
                             accumulate_termine(
                                 iter_date,
                                 &termine_aus_datei,
+                                color.to_owned(),
                                 &mut accumulated_termine,
                             );
                             add_or_subtract_days(&mut iter_date, 1);
@@ -201,6 +223,7 @@ fn main() {
                         accumulate_termine_by_search(
                             &search_term,
                             &termine_aus_datei,
+                            color.to_owned(),
                             &mut accumulated_termine,
                         )
                     }
@@ -250,7 +273,17 @@ fn main() {
                 }
             }
         }
-        println!("- {}{}", t.appointment_description, get_zeitangabe(&t),);
+        if t.appointment_color.is_some() {
+            println!(
+                "{}- {}{}{}",
+                t.appointment_color.as_ref().unwrap(),
+                t.appointment_description,
+                get_zeitangabe(&t),
+                COLOR_RESET
+            );
+        } else {
+            println!("- {}{}", t.appointment_description, get_zeitangabe(&t),);
+        }
     }
 }
 
@@ -415,11 +448,13 @@ fn accumulate_syntax_errors(pfad: &str, termine_aus_datei: &str, acc_errors: &mu
 fn accumulate_termine(
     datum: chrono::NaiveDate,
     termine_aus_datei: &str,
+    color: Option<String>,
     termine: &mut Vec<Appointment>,
 ) {
     for line in termine_aus_datei.lines() {
-        if let Some(termin_match) = get_termin_from_line(&line, Some(datum)) {
+        if let Some(mut termin_match) = get_termin_from_line(&line, Some(datum)) {
             // <-- // @todo Nov 17, 2024: Really? Some(datum)? Doing this simply to compile
+            termin_match.appointment_color = color.to_owned();
             if termin_match.appointment_date == Some(datum) {
                 termine.push(termin_match);
             }
@@ -430,11 +465,13 @@ fn accumulate_termine(
 fn accumulate_termine_by_search(
     search: &String,
     termine_aus_datei: &str,
+    color: Option<String>,
     termine: &mut Vec<Appointment>,
 ) {
     for line in termine_aus_datei.lines() {
         if line.contains(search) {
-            if let Some(found) = get_termin_from_line(&line, None) {
+            if let Some(mut found) = get_termin_from_line(&line, None) {
+                found.appointment_color = color.clone();
                 termine.push(found);
             }
         }
