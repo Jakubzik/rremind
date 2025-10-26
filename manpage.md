@@ -2,8 +2,8 @@
 title: RREMIND
 section: 1
 header: User Manual
-footer: rremind 0.0.14
-date: Oktober 09, 2025
+footer: rremind 0.0.15
+date: Oktober 26, 2025
 ---
 # NAME
 
@@ -24,6 +24,8 @@ With a date as parameter, "rremind" will list this date's appointments. Date can
 With an integer parameter `i`, "rremind" will list the appointments `i` days relative to today. (`rremind -1` will show yesterday's appointments, `rremind 2` will list the appointments on the day after tomorrow).
 
 With the parameter `when` plus a search string, rremind will list the appointments whose description contains the search string (`rremind when dentist` will list the appointments that contain the word "dentist").
+
+Color coding: if your file `birthdays.rem` contains the first line `# color=yellow` and `work.rem` the first line `# color=red`, all birthdays will appear yellow, all work-related appointments red. Available colors are red, yellow, blue, cyan, and green.
 
 # OPTIONS
 
