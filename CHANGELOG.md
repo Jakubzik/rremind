@@ -1,3 +1,7 @@
+# version 0.0.16
+
+Checksum problem.
+
 # version 0.0.15
 
 Adding some color. (Rremind files can now start with a line like `# color=red` so that all appointments in this file are displayed in red. Possible colors are currently red, yellow, blue, cyan, and green).

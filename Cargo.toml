@@ -1,6 +1,6 @@
 [package]
 name = "rremind"
-version = "0.0.15"
+version = "0.0.16"
 edition = "2024"
 description = "A simple reminder service inspired by Diane Skoll's 'remind'"
 categories = ["command-line-utilities"]
