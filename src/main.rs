@@ -1,5 +1,6 @@
 mod color;
 mod parser;
+mod utils;
 
 use chrono::{Datelike, Utc};
 pub(crate) use chrono::{Days, NaiveDate};
@@ -8,8 +9,14 @@ use parser::{as_date, between, get_termin_from_line, is_date};
 use std::{
     env::{self},
     fs::{self, DirEntry, File, OpenOptions},
-    io::{self, BufRead, BufReader, BufWriter, Write},
+    io::{self, Write},
     path::Path,
+};
+
+use crate::{
+    parser::is_day,
+    parser::is_month,
+    utils::{append_line_to_file, ask_option, get_rrem_file_options, remove_line_from_file},
 };
 
 /// Simple version of Diane Skoll's `remind` tool
@@ -24,7 +31,7 @@ use std::{
 // If we're not on Linux, don't bother
 const EXIT_CODE_NO_HOME_DIR: i32 = 1;
 const ARCHIVE_THRESHOLD: usize = 1; // @todo make threshold configurable
-const VERSION: &str = "0.0.14";
+const VERSION: &str = "0.0.17";
 
 #[derive(Debug)]
 struct RRemindFolders {
@@ -69,14 +76,51 @@ impl Appointment {
             return false;
         } else {
             if let Some(dtm) = self.appointment_date {
-                let thresh_date = Utc::now()
+                match Utc::now()
                     .date_naive()
                     .checked_sub_days(Days::new(ARCHIVE_THRESHOLD as u64))
-                    .unwrap();
-                thresh_date > dtm
+                {
+                    Some(d) => d > dtm,
+                    _ => panic!("Cannot construct day of today."),
+                }
             } else {
                 false
             }
+        }
+    }
+
+    fn get_time(&self) -> String {
+        if self.appointment_start.is_none() {
+            return "".to_string();
+        }
+        if self.appointment_stop.is_none() {
+            return self.appointment_start.unwrap().format("%H:%M").to_string();
+        }
+        return format!(
+            "{} - {}",
+            self.appointment_start.unwrap().format("%H:%M"),
+            self.appointment_stop.unwrap().format("%H:%M")
+        );
+    }
+
+    pub fn to_rrem_string(&self) -> String {
+        if self.appointment_is_full_date {
+            return format!(
+                "{} {}, {}",
+                self.appointment_date
+                    .unwrap()
+                    .format("%d.%m.%Y")
+                    .to_string(),
+                self.get_time(),
+                self.appointment_description
+            );
+        } else {
+            // panic!("{:?}", self);
+            return format!("{}", self.appointment_date_alt_text);
+            // println!(
+            //     "SORRY, currently only full dates can be saved through the cli. (You can still note periodical dates in rrem-files, though -- see `man rremind`)"
+            // );
+            // return String::from("");
         }
     }
 }
@@ -90,6 +134,7 @@ enum Command {
     SearchArchive, // new in 0.0.10
     Check,
     EditConfig,
+    AddAppointment,
     Archive,
     Version,
     Unknown,
@@ -115,7 +160,7 @@ fn main() {
     let mut requested_date_stop: NaiveDate = chrono::offset::Local::now().date_naive();
 
     let cmd = read_user_input(
-        args,
+        &args,
         &mut requested_date_start,
         &mut requested_date_stop,
         &mut search_term,
@@ -147,12 +192,20 @@ fn main() {
         );
         println!("- rremind check: report syntax errors in .rem-files.");
         println!("- rremind config: edit folders");
+        println!(
+            "- rremind add: add an appointment. Seperate date indication from description with a comma (e.g. `rremind add Mon 13:00, lunch`)"
+        );
         println!("- rremind archive: archive appointments that have a specific date in the past");
         return;
     }
 
     if cmd == Command::EditConfig {
         edit_config();
+        return;
+    }
+
+    if cmd == Command::AddAppointment {
+        add_appointment(&args[2..].join(" ").to_owned());
         return;
     }
 
@@ -239,7 +292,7 @@ fn main() {
     }
 
     if cmd == Command::Check {
-        if acc_errors.len() == 0 {
+        if acc_errors.is_empty() {
             println!("Check complete: all ok!");
         } else {
             for problem in acc_errors {
@@ -287,6 +340,64 @@ fn main() {
     }
 }
 
+fn seems_parseable(s_info: &str) -> Option<bool> {
+    let words: Vec<&str> = s_info.split_whitespace().collect();
+    if is_day(words.get(0)?) {
+        return Some(true);
+    } // <- courageous or stupid?
+    if is_month(words.get(0)?) {
+        return Some(true);
+    } // <- courageous or stupid?
+    None
+}
+fn add_appointment(s_info: &str) {
+    // println!("Adding this: >{s_info}<");
+    let f_path = format!(
+        "{}/{}",
+        get_rremind_folders().dir_rem_files,
+        ask_option(
+            "In which file should the appointment go? ",
+            get_rrem_file_options(),
+        )
+    );
+
+    match get_termin_from_line(s_info, None) {
+        Some(app) => {
+            if app.appointment_is_full_date {
+                append_line_to_file(&f_path, &app.to_rrem_string());
+            } else {
+                if let Some(b) = seems_parseable(s_info) {
+                    if b {
+                        append_line_to_file(&f_path, s_info);
+                    }
+                } else {
+                    panic!("Sorry, I didn't understand your input.");
+                }
+            }
+        }
+
+        None => {
+            if let Some(b) = seems_parseable(s_info) {
+                if b {
+                    append_line_to_file(&f_path, s_info);
+                }
+            } else {
+                panic!("Sorry, I didn't understand your input.");
+            }
+        }
+    };
+
+    // dbg!("{}", app);
+
+    // let d = ask("Which date? ", None);
+    // let app_date = parse_user_input(d).unwrap();
+
+    // let desc = ask("What's the appointments text? ");
+
+    // add_appointment(&f_path, normalize(&app_date, &desc));
+    println!("OK")
+}
+
 fn archive_appointments(file_name: &DirEntry, contents: &str, archiv_folder: &str) {
     std::fs::create_dir_all(&archiv_folder).expect(&format!(
         "Cannot create archive directory `{archiv_folder}`"
@@ -325,8 +436,9 @@ fn archive_appointments(file_name: &DirEntry, contents: &str, archiv_folder: &st
 }
 
 fn archive_appointment(line: &str, file_name: &&DirEntry, archive_name: &str) {
-    add_line_to_archive_file(archive_name, line);
-    remove_line_from_file(file_name.path().as_os_str().to_str().unwrap(), line);
+    if append_line_to_file(archive_name, line) {
+        remove_line_from_file(file_name.path().as_os_str().to_str().unwrap(), line);
+    }
 }
 
 fn add_line_to_archive_file(archive_name: &str, line: &str) {
@@ -340,26 +452,6 @@ fn add_line_to_archive_file(archive_name: &str, line: &str) {
     if let Err(e) = writeln!(file, "{}", line) {
         println!("Couldn't write to file: {}", e);
     }
-}
-
-fn remove_line_from_file(file_name: &str, line: &str) {
-    //Scope to ensure that the files are closed
-    let s_tmp_file_path = format!("{}.tmp", &file_name);
-    let file: File =
-        File::open(&file_name).expect(&format!("Cannot open rremind-file `{}`", &file_name));
-    let out_file: File = File::create(&s_tmp_file_path)
-        .expect(&format!("Cannot create tmp-file `{}`", &s_tmp_file_path));
-
-    let reader = BufReader::new(&file);
-    let mut writer = BufWriter::new(&out_file);
-
-    for sline in reader.lines() {
-        let single_line = sline.as_ref().unwrap();
-        if single_line != line {
-            writeln!(writer, "{}", single_line).unwrap_or_default();
-        }
-    }
-    fs::rename(&s_tmp_file_path, file_name).expect(&format!("Cannot replace original rremind file `{file_name}` with temporary (new) version `{s_tmp_file_path}`"));
 }
 
 /// Ask for directory containing the .rem-files,
@@ -492,61 +584,93 @@ fn add_or_subtract_days(datum: &mut NaiveDate, days: i64) {
 }
 
 fn read_user_input(
-    args: Vec<String>,
+    args: &Vec<String>,
     datum_start: &mut NaiveDate,
     datum_stop: &mut NaiveDate,
     search: &mut String,
 ) -> Command {
-    if args.len() > 1 {
-        if args.get(1).unwrap().contains("..") {
-            let from_to = args.get(1).unwrap().split_once("..").unwrap();
-            if let (Ok(days_start), Ok(days_stop)) =
-                (from_to.0.parse::<i64>(), from_to.1.parse::<i64>())
-            {
-                add_or_subtract_days(datum_start, days_start);
-                add_or_subtract_days(datum_stop, days_stop);
-                return Command::MultiListAppointments;
-            } else {
-                // Command not intelligible
-                return Command::Unknown;
-            }
-        } else {
-            if let Ok(days) = args.get(1).unwrap().parse::<i64>() {
-                add_or_subtract_days(datum_start, days);
-                return Command::ListAppointments;
-            } else {
-                if args.get(1).unwrap() == "when" {
-                    *search = args.get(2).expect(
-                        "If you're calling 'when', you need a second parameter. `rremind when dentist`",
-                    ).to_string();
-                    return Command::SearchAppointments;
-                }
-                if args.get(1).unwrap() == "when_was" {
-                    *search = args.get(2).expect(
-                        "If you're calling 'when_was', you need a second parameter. `rremind when_was Christmas`",
-                    ).to_string();
-                    return Command::SearchArchive;
-                }
-            }
-        }
+    // We'll interpret none, one or two arguments.
+    // (The first argument in the array is the path to the rremind binary)
+    let (argument1, argument2) = match args.as_slice() {
+        [_] => (&"".to_string(), &"".to_string()),
+        [_, arg1] => (arg1, &"".to_string()),
+        [_, arg1, arg2] => (arg1, arg2),
+        [_, arg1, arg2, ..] => (arg1, arg2), // "add" allows n params
+        _ => panic!("Please call with none, one or two parameters, see `help` or manpage"),
+    };
 
-        if is_date(args.get(1).unwrap()) {
-            *datum_start = as_date(args.get(1).unwrap()).unwrap();
+    // Without argument, we list today's appointments
+    if argument1.is_empty() {
+        return Command::ListAppointments;
+    }
+
+    if argument1.trim().to_lowercase() == "add" {
+        return Command::AddAppointment;
+    }
+
+    if argument1.contains("..") {
+        match argument1.split_once("..") {
+            Some((from, to)) => {
+                if let (Ok(days_start), Ok(days_stop)) = (from.parse::<i64>(), to.parse::<i64>()) {
+                    add_or_subtract_days(datum_start, days_start);
+                    add_or_subtract_days(datum_stop, days_stop);
+                    return Command::MultiListAppointments;
+                } else {
+                    // Command not intelligible
+                    // Maybe hint that parse i error?
+                    return Command::Unknown;
+                }
+            }
+            None => return Command::Unknown,
+        }
+    }
+
+    if argument2.is_empty()
+        && let Ok(days) = argument1.parse::<i64>()
+    {
+        add_or_subtract_days(datum_start, days);
+        return Command::ListAppointments;
+    } else {
+        if argument1 == "when" {
+            if !argument2.is_empty() {
+                *search = argument2.to_owned();
+            } else {
+                panic!(
+                    "If you're calling 'when', you need a second parameter. `rremind when dentist`"
+                );
+            }
+            return Command::SearchAppointments;
+        }
+        if argument2 == "when_was" {
+            if !argument2.is_empty() {
+                *search = argument2.to_owned();
+            } else {
+                panic!(
+                    "If you're calling 'when', you need a second parameter. `rremind when dentist`"
+                );
+            }
+            return Command::SearchArchive;
+        }
+    }
+
+    if !argument1.is_empty() {
+        if is_date(argument1) {
+            *datum_start = as_date(argument1).unwrap();
             return Command::ListAppointments;
         }
-        if args.get(1).unwrap() == "version" {
+        if argument1 == "version" {
             return Command::Version;
         }
-        if args.get(1).unwrap() == "check" {
+        if argument1 == "check" {
             return Command::Check;
         }
-        if args.get(1).unwrap() == "archive" {
+        if argument1 == "archive" {
             return Command::Archive;
         }
-        if args.get(1).unwrap() == "config" {
+        if argument1 == "config" {
             return Command::EditConfig;
         }
-        if args.get(1).unwrap() == "help" {
+        if argument1 == "help" {
             return Command::Help;
         }
 

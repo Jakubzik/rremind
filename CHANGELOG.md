@@ -1,3 +1,9 @@
+# version 0.0.17
+
+- Code refactoring (unwraps, Vector indexing)
+
+- implement `add` to add an appointment;
+
 # version 0.0.16
 
 Checksum problem.
@@ -86,6 +92,13 @@ Bugfix: "2025 jun 26 at 11.00 DURATION 1,5 MSG Lehraufträge an Klaus" fails to 
 
 # Unreleased
 
+[ ] `check` stumbles accross comments (color = red etc.)
+[ ] add tag "#blocking" in order to later create a method to look for 'free' periods
+[ ] implement `sort` and `normalize` to sort/normalize files so that fewer variants of date specifications appear.
+[ ] implement drop to drop a specific appointment
+[ ] test add function in more detail
+[ ] code refactoring: restructure parser to accomodate reading files and parsing dates to add 
+[ ]
 [ ] Create visual statistics on the number of appointments.
 [ ] Add more examples of REM-FILE entries to manpage
 [ ] Make deb package
@@ -95,7 +108,6 @@ Bugfix: "2025 jun 26 at 11.00 DURATION 1,5 MSG Lehraufträge an Klaus" fails to 
 [ ] get rid of the necessity to add "at" before time indication.
 [ ] make configurable templates for list of appointments (i.e. $date $from $to $subject $file)
 [ ] produce simple integration test
-[ ] add tag "#blocking" in order to later create a method to look for 'free' periods
 [ ] Make "archive" accept a parameter specifying how old the appointments need to be for archiving.
 [ ] Make archive configurable so that it collects all archives in *one* file.
 [ ] Make "when" and "when_was" accept word lists (with and/or?)

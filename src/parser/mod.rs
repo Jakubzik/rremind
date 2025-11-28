@@ -62,61 +62,141 @@ pub fn get_termin_from_line(s_text: &str, start_date: Option<NaiveDate>) -> Opti
     None
 }
 
-// 2024 sep 9 AT 10:00 DURATION 1 MSG Whatever
-pub(crate) fn get_termin_from_full_date(s_in: &str) -> Option<Appointment> {
+fn parse_date(s_in: &str) -> Option<NaiveDate> {
     let words: Vec<&str> = s_in.split_whitespace().collect();
-    if let Ok(year) = words.get(0)?.parse::<i32>() {
-        let month = get_month_as_no(words.get(1)?)?;
-        if let Ok(day) = words.get(2)?.parse::<usize>() {
-            let da = NaiveDate::from_ymd_opt(year, month as u32, day as u32);
-
-            let t: TimeHelper = extract_duration(s_in);
-
-            return Some(Appointment {
-                appointment_date: da,
-                appointment_is_full_date: true,
-                // appointment_start: extract_start_time(s_in),
-                // appointment_stop: extract_stop_time(s_in),
-                appointment_start: t.start,
-                appointment_stop: t.stop,
-                appointment_description: extract_description(s_in),
-                appointment_date_alt_text: extract_datum_text(s_in),
-                appointment_color: Some(COLOR_BLUE.to_owned()),
-            });
+    let mut dtm: Option<NaiveDate> = None;
+    // 18.12.2025
+    if let Ok(datum) = NaiveDate::parse_from_str(words.get(0).unwrap_or(&""), "%d.%m.%Y") {
+        dtm = Some(datum);
+    } else if let Ok(datum) = NaiveDate::parse_from_str(words.get(0).unwrap_or(&""), "%Y-%m-%d") {
+        dtm = Some(datum);
+    } else {
+        if let Ok(year) = words.get(0)?.parse::<i32>() {
+            let month = get_month_as_no(words.get(1)?)?;
+            if let Ok(day) = words.get(2)?.parse::<usize>() {
+                dtm = NaiveDate::from_ymd_opt(year, month as u32, day as u32);
+            }
         }
+    }
+    dtm
+}
+// 2024 sep 9 AT 10:00 DURATION 1 MSG Whatever
+// @todo: needs recrafting
+pub(crate) fn get_termin_from_full_date(s_in: &str) -> Option<Appointment> {
+    // let words: Vec<&str> = s_in.split_whitespace().collect();
+    if let Some(datum) = parse_date(s_in) {
+        let t: TimeHelper = extract_duration(s_in);
+        return Some(Appointment {
+            appointment_date: Some(datum),
+            appointment_is_full_date: true,
+            // appointment_start: extract_start_time(s_in),
+            // appointment_stop: extract_stop_time(s_in),
+            appointment_start: t.start,
+            appointment_stop: t.stop,
+            appointment_description: extract_description(s_in),
+            appointment_date_alt_text: extract_datum_text(s_in),
+            appointment_color: Some(COLOR_BLUE.to_owned()),
+        });
     }
     None
 }
 
+// @todo: move to utils,
+// include in tests (!)
+fn split_once_ignore_case(s_in: &str, splitter: &str) -> Option<(String, String)> {
+    let s_in_small = s_in.to_lowercase();
+    let splitter_small = splitter.to_lowercase();
+
+    if let Some(start) = s_in_small.find(&splitter_small) {
+        let c1 = s_in[0..start].to_string();
+        let c2 = s_in[start + splitter.len() + 1..].to_string();
+        return Some((c1, c2));
+    }
+    None
+}
+
+// The part *before* the first comma
+// OR before "msg" or "rem" -- whichever
+// comes first -- is the time indicator
+pub fn split_time_from_description(s_in: &str) -> (String, String) {
+    let max = s_in.len() + 1;
+    let i_msg = s_in.to_lowercase().find(" msg ").unwrap_or(max);
+    let i_rem = s_in.to_lowercase().find(" rem ").unwrap_or(max);
+    let i_comma = s_in.find(", ").unwrap_or(max);
+    if i_comma < max && i_comma < i_msg && i_comma < i_rem {
+        let tmp = s_in.split_once(", ").unwrap();
+        return (tmp.0.to_string(), tmp.1.to_string());
+    };
+    if i_rem < max && i_rem < i_msg && i_rem < i_comma {
+        let tmp = split_once_ignore_case(s_in, " rem ").unwrap();
+        return (tmp.0.to_string(), tmp.1.to_string());
+    }
+    if i_msg < max && i_msg < i_rem && i_msg < i_comma {
+        let tmp = split_once_ignore_case(s_in, " msg ").unwrap();
+        return (tmp.0.to_string(), tmp.1.to_string());
+    }
+    ("".to_string(), s_in.to_string())
+}
+
+// Dies hier funktioniert nicht gut, 3.12.2025 at 15:00 klappt zwar,
+// aber 3.12.2025 15:00 nicht. Besser wäre eine Trennung von Zeit und
+// Info z.B. durch "," oder "msg"
+// Wenn davor eine Zeit steht, ist es eine Uhrzeit etc.
 // Either Jan 24 2024 AT 10:00 DURATION 1, or
 //        Jan 24 2024 AT 10:00-12:00
+//        Jan 24 2024 10:00-12:00
 fn extract_duration(s_in: &str) -> TimeHelper {
     // See if we have AT ... - ...
-    let small = s_in.to_lowercase();
+    // let small = s_in.to_lowercase();
+    let small = split_time_from_description(s_in)
+        .0
+        .to_lowercase()
+        .replace(" - ", "-"); // 10:00 - 11:00 ==> 10:00-11:00
+    let words: Vec<&str> = small.split_whitespace().collect();
 
-    // We're looking for notations with "-" first,
-    // i.e. 10:00-11:30 rather than 10:00 DURATION 90
-    if let Some(index) = small.find(" at ") {
-        let start = index + " at ".len();
-        let end = match small.len() >= start + "10:00 - 11:00".len() {
-            true => start + "10:00 - 11:00".len(),
-            _ => start + "10:00-11:00".len(),
-        };
-
-        // Avoid getting in the middle of unicode bytes
-        let text_vec = s_in.chars().collect::<Vec<_>>();
-        let s_i = text_vec[start..end].iter().cloned().collect::<String>();
-
-        // Is the duration indicated with "-", i.e. 10:00-11:00 ?
-        if s_i.contains("-") {
-            let times = s_i.split_once("-").unwrap();
+    // print!("{:?}", words);
+    for word in words {
+        if word.contains("-") {
+            let times = word.split_once("-").unwrap_or_default();
+            // println!("HEREL {:?}", times);
             return TimeHelper {
                 start: NaiveTime::parse_from_str(times.0.trim(), &get_time_parser(times.0.trim()))
                     .ok(),
-                stop: get_stop(times.1.trim()),
+                stop: NaiveTime::parse_from_str(times.1.trim(), &get_time_parser(times.1.trim()))
+                    .ok(),
+            };
+        }
+        if word.contains(":") {
+            return TimeHelper {
+                start: NaiveTime::parse_from_str(word.trim(), &get_time_parser(word.trim())).ok(),
+                stop: None,
             };
         }
     }
+
+    // // We're looking for notations with "-" first,
+    // // i.e. 10:00-11:30 rather than 10:00 DURATION 90
+    // if let Some(index) = small.find(" at ") {
+    //     let start = index + " at ".len();
+    //     let end = match small.len() >= start + "10:00 - 11:00".len() {
+    //         true => start + "10:00 - 11:00".len(),
+    //         _ => start + "10:00-11:00".len(),
+    //     };
+
+    //     // Avoid getting in the middle of unicode bytes
+    //     let text_vec = s_in.chars().collect::<Vec<_>>();
+    //     let s_i = text_vec[start..end].iter().cloned().collect::<String>();
+
+    //     // Is the duration indicated with "-", i.e. 10:00-11:00 ?
+    //     if s_i.contains("-") {
+    //         let times = s_i.split_once("-").unwrap();
+    //         return TimeHelper {
+    //             start: NaiveTime::parse_from_str(times.0.trim(), &get_time_parser(times.0.trim()))
+    //                 .ok(),
+    //             stop: get_stop(times.1.trim()),
+    //         };
+    //     }
+    // }
 
     // This works for "DURATION" notation
     return TimeHelper {
@@ -209,7 +289,8 @@ pub(crate) fn get_termin_without_month(
     start_date: Option<NaiveDate>,
 ) -> Option<Appointment> {
     // let small = s_in.to_lowercase();
-    let words: Vec<&str> = s_in.split_whitespace().collect();
+    let termin = split_time_from_description(s_in).0;
+    let words: Vec<&str> = termin.split_whitespace().collect();
     if is_day(words.get(0)?) {
         if let Some(da) = find_next_date(words.get(0)?, start_date) {
             let t: TimeHelper = extract_duration(s_in);
@@ -246,7 +327,7 @@ fn find_next_date(weekday: &str, start_date: Option<NaiveDate>) -> Option<NaiveD
     None
 }
 
-fn is_month(month: &str) -> bool {
+pub fn is_month(month: &str) -> bool {
     MONTHS.iter().any(|s| month.to_lowercase().starts_with(*s))
 }
 
@@ -260,7 +341,7 @@ fn get_month_as_no(month: &str) -> Option<usize> {
     }
 }
 
-fn is_day(weekday_name: &str) -> bool {
+pub fn is_day(weekday_name: &str) -> bool {
     // let wdn = &weekday_name[0..2];
     DAYS.iter()
         .any(|s| weekday_name.to_lowercase().starts_with(*s))
@@ -411,7 +492,7 @@ mod test_parsing {
         Appointment,
         parser::{
             get_month_as_no, get_termin_from_full_date, get_termin_from_line,
-            get_termin_without_month, get_termin_without_year, is_date, is_month,
+            get_termin_without_month, get_termin_without_year, is_date, is_month, parse_date,
         },
     };
 
@@ -732,6 +813,15 @@ mod test_parsing {
         assert_eq!(
             tmp.appointment_start,
             NaiveTime::parse_from_str("1:00", "%H:%M").ok()
+        );
+    }
+
+    #[test]
+    fn test_parse_date() {
+        let test_line = "03.12.2025 13:45 - 14:15, R122 Litwiss Treffen";
+        assert_eq!(
+            parse_date(test_line),
+            Some(NaiveDate::from_str("2025-12-3").unwrap())
         );
     }
 

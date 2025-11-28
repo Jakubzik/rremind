@@ -2,8 +2,8 @@
 title: RREMIND
 section: 1
 header: User Manual
-footer: rremind 0.0.16
-date: Oktober 28, 2025
+footer: rremind 0.0.17
+date: November 28, 2025
 ---
 # NAME
 
@@ -50,13 +50,16 @@ Color coding: if your file `birthdays.rem` contains the first line `# color=yell
 **check**,
 : read through the *.rem files in the configuration folder and report lines that cannot be properly interpreted by `rremind`.
 
+**add**,
+: add the appointment specified after `add`: use a comma to separate date indication from descriptive text, e.g. `rremind add Mon 13:00, lunch` or `rremind add 6.12.2025 10:00-17:00, celebrate Nikolaus`.
+
 **config**,
 : enter or alter the directories where the remind-files are located, and where they are archived. The configuration file can equally well be edited manually (look under $HOME/rremind/rr.rc)
 
 **archive**,
 : archive all appointments that are in the past. This affects only appointments that are specified with a full date -- periodical entries are not archived. Lines in .rem-files containing past appointments are erased from these files, and appended to files in the archive directory (see 'config' above). Files in the archive directory have the same name as the original .rem-file, but the suffix .done (rather than .rem).
 
-# SYNTAX OF REM-FILE ENTRIES
+ SYNTAX OF REM-FILE ENTRIES
 
 **yearly dates**
 : [Month] [DAY] [AT optional time], INFO; for example: `Nov 24, John's birthday`, or `Nov 24 REM John's birthday`, or `Nov 24 at 22:00, John's birthday party`
@@ -66,6 +69,17 @@ Color coding: if your file `birthdays.rem` contains the first line `# color=yell
 
 **specific dates**
 : [Year] [Month] [DAY] [AT optional time], INFO; for example 2024 dec 24, Christmas.
+
+The **date** can be specified in one of three formats:
+: 2024 dec 24,
+: 2024-12-24,
+: 24.12.2025
+
+The **time** may be introduced with "at", but this can be left out if the time contains a colon. So `at 14` is equivalent to `14:00`.
+
+A **period of time** can be specified with a hyphen, e.g. "14:00-15:30". Or it can be given as "at 14 DURATION 90".
+
+
 
 **time indication**
 : The syntax for time notation is 24-hour format rather than am/pm, e.g. 16:15. Hour and minutes can be separated either with a colon (16:15) or with a period (16.15).
