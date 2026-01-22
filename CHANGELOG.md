@@ -1,3 +1,9 @@
+# version 0.0.18
+
+- lib upgrade
+
+- fixed sequence of selection of "where do you want to save the appointment"
+
 # version 0.0.17
 
 - Code refactoring (unwraps, Vector indexing)
@@ -92,6 +98,7 @@ Bugfix: "2025 jun 26 at 11.00 DURATION 1,5 MSG Lehraufträge an Klaus" fails to 
 
 # Unreleased
 
+[ ] when_was is not working properly
 [ ] `check` stumbles accross comments (color = red etc.)
 [ ] add tag "#blocking" in order to later create a method to look for 'free' periods
 [ ] implement `sort` and `normalize` to sort/normalize files so that fewer variants of date specifications appear.

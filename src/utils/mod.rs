@@ -69,5 +69,6 @@ pub(crate) fn get_rrem_file_options() -> Vec<String> {
             }
         }
     }
+    files.sort();
     files
 }

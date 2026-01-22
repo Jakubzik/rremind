@@ -7,7 +7,7 @@ date: November 28, 2025
 ---
 # NAME
 
-rremind -- a reminder service inspired by Diane Skoll's `remind`
+rremind -- a reminder service inspired by Diane Skoll's 'remind'
 
 # SYNOPSIS
 
@@ -21,11 +21,11 @@ Without parameter, "rremind" will list today's appointments.
 
 With a date as parameter, "rremind" will list this date's appointments. Date can be in ISO or German format (i.e. 2025-3-10 or 10.3.2025).
 
-With an integer parameter `i`, "rremind" will list the appointments `i` days relative to today. (`rremind -1` will show yesterday's appointments, `rremind 2` will list the appointments on the day after tomorrow).
+With an integer parameter 'i', "rremind" will list the appointments 'i' days relative to today. ('rremind -1' will show yesterday's appointments, 'rremind 2' will list the appointments on the day after tomorrow).
 
-With the parameter `when` plus a search string, rremind will list the appointments whose description contains the search string (`rremind when dentist` will list the appointments that contain the word "dentist").
+With the parameter 'when' plus a search string, rremind will list the appointments whose description contains the search string ('rremind when dentist' will list the appointments that contain the word "dentist").
 
-Color coding: if your file `birthdays.rem` contains the first line `# color=yellow` and `work.rem` the first line `# color=red`, all birthdays will appear yellow, all work-related appointments red. Available colors are red, yellow, blue, cyan, and green.
+Color coding: if your file 'birthdays.rem' contains the first line '# color=yellow' and 'work.rem' the first line '# color=red', all birthdays will appear yellow, all work-related appointments red. Available colors are red, yellow, blue, cyan, and green.
 
 # OPTIONS
 
@@ -48,10 +48,10 @@ Color coding: if your file `birthdays.rem` contains the first line `# color=yell
 : show brief help message
 
 **check**,
-: read through the *.rem files in the configuration folder and report lines that cannot be properly interpreted by `rremind`.
+: read through the *.rem files in the configuration folder and report lines that cannot be properly interpreted by 'rremind'.
 
 **add**,
-: add the appointment specified after `add`: use a comma to separate date indication from descriptive text, e.g. `rremind add Mon 13:00, lunch` or `rremind add 6.12.2025 10:00-17:00, celebrate Nikolaus`.
+: add the appointment specified after 'add': use a comma to separate date indication from descriptive text, e.g. 'rremind add Mon 13:00, lunch' or 'rremind add 6.12.2025 10:00-17:00, celebrate Nikolaus'.
 
 **config**,
 : enter or alter the directories where the remind-files are located, and where they are archived. The configuration file can equally well be edited manually (look under $HOME/rremind/rr.rc)
@@ -62,10 +62,10 @@ Color coding: if your file `birthdays.rem` contains the first line `# color=yell
  SYNTAX OF REM-FILE ENTRIES
 
 **yearly dates**
-: [Month] [DAY] [AT optional time], INFO; for example: `Nov 24, John's birthday`, or `Nov 24 REM John's birthday`, or `Nov 24 at 22:00, John's birthday party`
+: [Month] [DAY] [AT optional time], INFO; for example: 'Nov 24, John's birthday', or 'Nov 24 REM John's birthday', or 'Nov 24 at 22:00, John's birthday party'
 
 **weekly dates**
-: [Day] [AT optional time], INFO; for example `Mon at 18:00, dancing lesson`;
+: [Day] [AT optional time], INFO; for example 'Mon at 18:00, dancing lesson';
 
 **specific dates**
 : [Year] [Month] [DAY] [AT optional time], INFO; for example 2024 dec 24, Christmas.
@@ -75,11 +75,9 @@ The **date** can be specified in one of three formats:
 : 2024-12-24,
 : 24.12.2025
 
-The **time** may be introduced with "at", but this can be left out if the time contains a colon. So `at 14` is equivalent to `14:00`.
+The **time** may be introduced with "at", but this can be left out if the time contains a colon. So 'at 14' is equivalent to '14:00'.
 
 A **period of time** can be specified with a hyphen, e.g. "14:00-15:30". Or it can be given as "at 14 DURATION 90".
-
-
 
 **time indication**
 : The syntax for time notation is 24-hour format rather than am/pm, e.g. 16:15. Hour and minutes can be separated either with a colon (16:15) or with a period (16.15).
@@ -105,7 +103,10 @@ A **period of time** can be specified with a hyphen, e.g. "14:00-15:30". Or it c
 : list all appointment for today and the coming 7 days
 
 **rremind when dentist**
-: list appointments that contain the word "dentist"
+: list future appointments that contain the word "dentist"
+
+**rremind when_was dentist**
+: list past (archived) appointments that contain the word "dentist"
 
 **rremind check**
 : syntax-check the files in the rremind folder
