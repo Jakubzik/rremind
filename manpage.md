@@ -2,8 +2,8 @@
 title: RREMIND
 section: 1
 header: User Manual
-footer: rremind 0.0.17
-date: November 28, 2025
+footer: rremind 0.0.18
+date: Januar 22, 2026
 ---
 # NAME
 
@@ -79,6 +79,8 @@ The **time** may be introduced with "at", but this can be left out if the time c
 
 A **period of time** can be specified with a hyphen, e.g. "14:00-15:30". Or it can be given as "at 14 DURATION 90".
 
+
+
 **time indication**
 : The syntax for time notation is 24-hour format rather than am/pm, e.g. 16:15. Hour and minutes can be separated either with a colon (16:15) or with a period (16.15).
 
@@ -103,10 +105,7 @@ A **period of time** can be specified with a hyphen, e.g. "14:00-15:30". Or it c
 : list all appointment for today and the coming 7 days
 
 **rremind when dentist**
-: list future appointments that contain the word "dentist"
-
-**rremind when_was dentist**
-: list past (archived) appointments that contain the word "dentist"
+: list appointments that contain the word "dentist"
 
 **rremind check**
 : syntax-check the files in the rremind folder
