@@ -31,7 +31,7 @@ use crate::{
 // If we're not on Linux, don't bother
 const EXIT_CODE_NO_HOME_DIR: i32 = 1;
 const ARCHIVE_THRESHOLD: usize = 1; // @todo make threshold configurable
-const VERSION: &str = "0.0.18";
+const VERSION: &str = "0.0.19";
 
 #[derive(Debug)]
 struct RRemindFolders {
@@ -531,7 +531,8 @@ fn get_user_input(question: &str, default: &str) -> String {
 
 fn accumulate_syntax_errors(pfad: &str, termine_aus_datei: &str, acc_errors: &mut Vec<String>) {
     for line in termine_aus_datei.lines() {
-        if !line.is_empty() && get_termin_from_line(&line, None).is_none() {
+        if !line.starts_with("# ") && line.is_empty() && get_termin_from_line(&line, None).is_none()
+        {
             acc_errors.push(format!("File: '{}':\nLine: {}\n", pfad, line));
         }
     }
@@ -641,12 +642,12 @@ fn read_user_input(
             }
             return Command::SearchAppointments;
         }
-        if argument2 == "when_was" {
+        if argument1 == "when_was" {
             if !argument2.is_empty() {
                 *search = argument2.to_owned();
             } else {
                 panic!(
-                    "If you're calling 'when', you need a second parameter. `rremind when dentist`"
+                    "If you're calling 'when' or 'when_was', you need a second parameter. `rremind when_was dentist`"
                 );
             }
             return Command::SearchArchive;

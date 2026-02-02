@@ -1,3 +1,11 @@
+# version 0.0.19
+
+- repairs `when_was`
+
+- repairs `check`
+
+- more exmples in manfile
+
 # version 0.0.18
 
 - lib upgrade
@@ -92,14 +100,15 @@ Bugfix: "2025 jun 26 at 11.00 DURATION 1,5 MSG Lehraufträge an Klaus" fails to 
 
 - implemented `rremind help`
 
+
 # version 0.0.1
 
 - Created "remind" clone in Rust for fun and because "Unrecognized command; interpreting as REM" flooded my terminal
 
 # Unreleased
 
-[ ] when_was is not working properly
-[ ] `check` stumbles accross comments (color = red etc.)
+
+[ ] consistency in weekly files: "24.12.2026 Christmas" is fine but "Mon dancing" not (needs to be "Mon, dancing" but 24.12.2026, Christmas does not work)
 [ ] add tag "#blocking" in order to later create a method to look for 'free' periods
 [ ] implement `sort` and `normalize` to sort/normalize files so that fewer variants of date specifications appear.
 [ ] implement drop to drop a specific appointment
@@ -140,3 +149,5 @@ Bugfix: "2025 jun 26 at 11.00 DURATION 1,5 MSG Lehraufträge an Klaus" fails to 
 [x] repair erroneous display of `version` [v0.0.9]
 [x] Make "when" work on archive [v0.0.10]
 [x] BUG: entry "2025 feb 26 at 13.00 DURATION 1 MSG Whatever" does not show the time [v 0.0.11]
+[x] when_was is not working properly [0.0.19]
+[x] `check` stumbles accross comments (color = red etc.)
